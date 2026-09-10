@@ -334,6 +334,27 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 @keyframes sup{from{transform:translateY(100%)}to{transform:none}}
 .sh-head{display:flex;align-items:center;gap:8px;flex:none}
 .sh-head b{font-size:var(--fs-l);font-weight:800}
+/* 设置面板：可折叠分组 */
+.fold{background:var(--cream);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:14px 14px;font-weight:800;color:var(--ink2)}
+.fold>summary::-webkit-details-marker{display:none}
+.fold .fh b{font-size:14.5px}
+.fold .fh .ic{width:17px;height:17px;color:var(--mint-d);flex:none}
+.fold .fh .t{font-size:11.5px;color:var(--ink3);font-weight:600;margin-left:8px}
+.fold .arr{width:9px;height:9px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(45deg);transition:transform .2s;margin-left:auto;flex:none}
+.fold:not([open]) .arr{transform:rotate(-45deg)}
+.fold .fbody{padding:0 14px 14px}
+/* 设置 / 登录面板字号放大 */
+.sheet{font-size:14.5px}
+.sheet .crow .lb{font-size:14px;font-weight:800}
+.sheet .crow .vl{font-size:12.5px;line-height:1.5}
+.sheet .mi-name{font-size:14px}
+.sheet .mi-sub{font-size:11.5px}
+.sheet .set-inp{font-size:15px;padding:12px 12px}
+.sheet .mig-tip{font-size:12.5px;line-height:1.6}
+.sheet .sh-head b{font-size:17px}
+.sheet .chkline{font-size:13px}
+.sheet .migbtn{font-size:14px}
 .sh-head .wh{font-size:var(--fs-xs);color:var(--ink3);font-weight:700}
 .sh-head .cx{margin-left:auto;width:28px;height:28px;border-radius:9px;background:var(--cream2);
   display:grid;place-items:center;color:var(--ink2);font-size:19px;line-height:1;flex:none}
@@ -396,10 +417,6 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 
     <!-- ============ 页 1 · 记账 ============ -->
     <section class="page on" id="p-add">
-      <div class="acctwrap">
-        <div class="objlabel">当前账号</div>
-        <div class="acctchips"></div>
-      </div>
       <div class="ledgerwrap">
         <div class="objlabel">当前账本</div>
         <div class="ledgerchips"></div>
@@ -438,10 +455,6 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 
     <!-- ============ 页 · 对比 ============ -->
     <section class="page" id="p-cmp">
-      <div class="acctwrap">
-        <div class="objlabel">当前账号</div>
-        <div class="acctchips"></div>
-      </div>
       <div class="ledgerwrap">
         <div class="objlabel">当前账本</div>
         <div class="ledgerchips"></div>
@@ -461,10 +474,6 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 
     <!-- ============ 页 3 · 总计 ============ -->
     <section class="page" id="p-total">
-      <div class="acctwrap">
-        <div class="objlabel">当前账号</div>
-        <div class="acctchips"></div>
-      </div>
       <div class="ledgerwrap">
         <div class="objlabel">当前账本</div>
         <div class="ledgerchips"></div>
@@ -490,10 +499,6 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 
     <!-- ============ 页 · 详单 ============ -->
     <section class="page" id="p-list">
-      <div class="acctwrap">
-        <div class="objlabel">当前账号</div>
-        <div class="acctchips"></div>
-      </div>
       <div class="ledgerwrap">
         <div class="objlabel">当前账本</div>
         <div class="ledgerchips"></div>
@@ -543,45 +548,44 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       <button class="cx" id="setClose" aria-label="关闭">×</button>
     </div>
 
-    <div class="card tight">
-      <div class="h"><svg class="ic"><use href="#i-cloud"/></svg><b>云同步</b>
-        <span class="t" id="cloudTag">未登录</span></div>
-      <div id="accountBox"></div>
-    </div>
+    <details class="fold" open>
+      <summary class="fh"><svg class="ic"><use href="#i-cloud"/></svg><b>云同步</b>
+        <span class="t" id="cloudTag">未登录</span><span class="arr"></span></summary>
+      <div class="fbody" id="accountBox"></div>
+    </details>
 
-    <div class="card tight">
-      <div class="h"><svg class="ic"><use href="#i-note"/></svg><b>账本管理</b>
-        <span class="t">账号 <span id="mgmtAcName">—</span></span></div>
-      <div id="ledgerMgmt" class="mgmt-list"></div>
-      <button class="weakbtn" id="btnAddLedger2" style="margin-top:8px">＋ 新增账本</button>
-    </div>
-
-    <div class="card tight">
-      <div class="h"><svg class="ic"><use href="#i-gear"/></svg><b>账号管理</b>
-        <span class="t">共 <span id="mgmtAcCount">0</span> 个</span></div>
-      <div id="acctMgmt" class="mgmt-list"></div>
-      <button class="weakbtn" id="btnAddAccount2" style="margin-top:8px">＋ 新增账号</button>
-    </div>
-
-    <div class="card tight">
-      <div class="h"><svg class="ic"><use href="#i-wallet"/></svg><b>数据迁移</b>
-        <span class="t">导出 / 导入 Excel</span></div>
-      <div class="mig-btns">
-        <button class="migbtn exp" id="btnExport2"><svg class="ic"><use href="#i-down"/></svg>导出 Excel</button>
-        <button class="migbtn imp" id="btnImport2"><svg class="ic"><use href="#i-up"/></svg>导入 Excel</button>
+    <details class="fold">
+      <summary class="fh"><svg class="ic"><use href="#i-note"/></svg><b>账本管理</b>
+        <span class="t">账号 <span id="mgmtAcName">—</span></span><span class="arr"></span></summary>
+      <div class="fbody">
+        <div id="ledgerMgmt" class="mgmt-list"></div>
+        <button class="weakbtn" id="btnAddLedger2" style="margin-top:8px">＋ 新增账本</button>
       </div>
-      <input type="file" id="fileInput2" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
-      <div class="mig-tip">导出<b>全部账号</b>的原始账目明细（含收入/支出），可分享到微信或存到手机；导入时自动识别列、并入现有数据，方便换机迁移。</div>
-    </div>
+    </details>
 
-    <div class="card tight">
-      <div class="h"><svg class="ic"><use href="#i-trash"/></svg><b>清空数据</b>
-        <span class="t">不可恢复</span></div>
-      <div class="set-row" style="margin-bottom:8px">
-        <button class="dangerbtn weak" id="btnClearCur"><svg class="ic"><use href="#i-trash"/></svg>清空当前账号</button>
+    <details class="fold">
+      <summary class="fh"><svg class="ic"><use href="#i-wallet"/></svg><b>数据迁移</b>
+        <span class="t">导出 / 导入 Excel</span><span class="arr"></span></summary>
+      <div class="fbody">
+        <div class="mig-btns">
+          <button class="migbtn exp" id="btnExport2"><svg class="ic"><use href="#i-down"/></svg>导出 Excel</button>
+          <button class="migbtn imp" id="btnImport2"><svg class="ic"><use href="#i-up"/></svg>导入 Excel</button>
+        </div>
+        <input type="file" id="fileInput2" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
+        <div class="mig-tip">导出<b>全部账号</b>的原始账目明细（含收入/支出），可分享到微信或存到手机；导入时自动识别列、并入现有数据，方便换机迁移。</div>
       </div>
-      <button class="dangerbtn" id="btnClearAll"><svg class="ic"><use href="#i-trash"/></svg>清空全部账号数据</button>
-    </div>
+    </details>
+
+    <details class="fold">
+      <summary class="fh"><svg class="ic"><use href="#i-trash"/></svg><b>清空数据</b>
+        <span class="t">不可恢复</span><span class="arr"></span></summary>
+      <div class="fbody">
+        <div class="set-row" style="margin-bottom:8px">
+          <button class="dangerbtn weak" id="btnClearCur"><svg class="ic"><use href="#i-trash"/></svg>清空当前账号</button>
+        </div>
+        <button class="dangerbtn" id="btnClearAll"><svg class="ic"><use href="#i-trash"/></svg>清空全部账号数据</button>
+      </div>
+    </details>
   </div>
 
   <div class="sheetmask" id="sheetMask"></div>
@@ -1615,45 +1619,38 @@ function injectLogin(){
   m.innerHTML = `<div class="sheet" id="loginBody"></div>`;
   document.body.appendChild(m);
 }
-/* 账号登陆：游客启动或切换账号。游客模式强制登录（不显示关闭按钮），登录后渲染账本 */
+/* 账号登陆（云同步）：默认以 chenjy 进入，登录用于解锁并配置云同步 */
 function openLogin(){
   injectLogin();
-  const guest = !S.cur;                                  // 游客：必须登录才能进，不可关闭
-  const keys = Object.keys(S.accounts);
-  const rows = keys.map(ac => {
-    const a = S.accounts[ac];
-    const locked = !!a.pass;
-    const verb = S.cur ? (ac===S.cur ? "当前 ✓" : "切换 ›") : "登录 ›";
-    return `<div class="crow acc-pick" data-ac="${esc(ac)}" style="cursor:pointer">
-      <span class="lb">${esc(ac)}${locked?" 🔒":""}</span>
-      <span class="vl">${verb}</span></div>`;
-  }).join("")
-    + `<div class="crow acc-pick" data-ac="add" style="cursor:pointer">
-        <span class="lb">＋ 新增账号</span><span class="vl">›</span></div>`;
+  const ac = "chenjy";
+  const a = S.accounts[ac] || curAccount();
+  const locked = !!(a && a.pass);
   $("#loginBody").innerHTML = `
-    <div class="sh-head"><b>${guest?"账号登陆":"切换账号"}</b>${guest?"":'<button class="cx" id="loginX" aria-label="关闭">×</button>'}</div>
+    <div class="sh-head"><b>账号登陆（云同步）</b><button class="cx" id="loginX" aria-label="关闭">×</button></div>
     <div style="padding:0 2px 4px">
-      <div class="mig-tip">${guest?"选择一个账号登录后即可查看账本。":"选一个账号切换，或新增账号。"}带 🔒 的账号需要密码。</div>
-      ${rows}
-      <div class="mig-tip">登录后可在设置里「修改云端配置」填 Token，开启自动备份（可选）。</div>
+      <div class="mig-tip">输入账号密码登录后开启云同步：首次需填写 GitHub Token，保存后登录即自动备份到云端，各设备数据互通。</div>
+      <div class="crow acc-pick" data-ac="${esc(ac)}" style="cursor:pointer">
+        <span class="lb">${esc(ac)}${locked?" 🔒":""}</span>
+        <span class="vl">登录 ›</span></div>
+      <div class="mig-tip">密码默认 000000（可在电脑端「修改云端配置」旁自行修改）。</div>
     </div>`;
-  if (!guest) $("#loginX").onclick = () => closeLogin();
+  $("#loginX").onclick = () => closeLogin();
   $$("#loginBody .acc-pick").forEach(el => el.onclick = () => {
-    const ac = el.dataset.ac;
-    if (ac === "add"){ addAccount(); if (!S.cur) openLogin(); else closeLogin(); return; }
-    const hp = S.accounts[ac].pass;
-    if (hp && !_unlocked[ac]){
-      const p = prompt("「" + ac + "」需要密码：");
+    const acn = el.dataset.ac;
+    const hp = S.accounts[acn] && S.accounts[acn].pass;
+    if (hp && !_unlocked[acn]){
+      const p = prompt("「" + acn + "」需要密码：");
       if (p === null) return;
       if (hashPwd(p) !== hp){ toast("密码错误", "err"); return; }
-      _unlocked[ac] = true;
+      _unlocked[acn] = true;
     }
-    S.cur = ac; save();
+    S.cur = acn; save();
     closeLogin();
-    renderAll();
-    renderAcctMgmt(); renderLedgerMgmt(); renderAccountBox();
-    afterLogin();
-    toast("已登录账号 " + ac);
+    renderAll(); renderLedgerMgmt(); renderAccountBox();
+    const c = getCloud();
+    if (!c.token || !c.gistId) openCloudGuide();   // 首次：引导配置云同步 Token
+    else afterLogin();                             // 已配置：直接云同步
+    toast("已登录账号 " + acn);
   });
   $("#loginBody").classList.add("on");
   $("#loginMask").classList.add("on");
@@ -1692,7 +1689,7 @@ function openCloudGuide(){
   $("#guideBody").innerHTML = `
     <div class="sh-head"><b>配置云端备份</b><button class="cx" id="guideX" aria-label="关闭">×</button></div>
     <div style="padding:0 2px 4px">
-      <div class="mig-tip">粘贴一个<b>只勾 gist 权限</b>的 GitHub Token 即可。Token 只存在这台设备上，不会上传给别人。点「自动创建 Gist」会为你新建一个<b>私密</b> Gist 存放数据。</div>
+      <div class="mig-tip">粘贴一个<b>具备 gist 权限</b>的 GitHub Token（github.com → Settings → Developer settings → 生成时勾选 <b>gist</b>）。Token 只存在这台设备上，不会上传给别人。点「自动创建 Gist」会为你新建一个<b>私密</b> Gist 存放数据。</div>
       <input class="set-inp" id="guideToken" type="password" placeholder="GitHub Token（ghp_ 或 github_pat_ 开头）" value="${esc(c.token || "")}" autocomplete="off">
       <input class="set-inp" id="guideGist" type="text" placeholder="已有 Gist ID（可留空，点下面自动创建）" value="${esc(c.gistId || "")}" autocomplete="off">
       <label class="chkline"><input type="checkbox" id="guideAuto" ${c.autoSync ? "checked" : ""}> 自动同步（任何改动自动备份）</label>
@@ -1742,29 +1739,25 @@ function fmtTime(t){ return t ? new Date(t).toLocaleString("zh-CN") : "从未"; 
 function renderAccountBox(){
   const box = $("#accountBox"); if (!box) return;
   const ac = S.cur, a = S.accounts[ac];
-  if (!ac || !a){                       // 游客：未登录任何账号
+  if (!ac || !a){                       // 极端情况（未登录任何账号）
     box.innerHTML = `<div class="crow" id="accLoginRow"><span class="lb">☁ 账号登陆</span><span class="vl">点击登录 ›</span></div>`;
-    $("#accLoginRow").onclick = () => openLogin();
+    $("#accLoginRow").onclick = () => { closeSettings(); openLogin(); };
     return;
   }
   const c = getCloud();
   const tag = $("#cloudTag");
-  if (tag) tag.textContent = ac + (a.pass ? " 🔒" : "");
+  if (tag) tag.textContent = c.token ? "已配置云同步" : "未配置";
   let syncTxt = "未配置 ›";
   if (c.token && c.gistId) syncTxt = (c.autoSync ? "已开启 · 自动备份" : "已配置 · 手动") + "（上次 " + fmtTime(c.lastSync) + "）›";
   else if (c.token) syncTxt = "缺 Gist，点此创建 ›";
   box.innerHTML = `
-    <div class="crow" id="accLoginRow"><span class="lb">☁ 切换账号</span><span class="vl">›</span></div>
-    <div class="crow" id="accLogoutRow"><span class="lb">退出登录（回到游客）</span><span class="vl">›</span></div>
-    <div class="crow"><span class="lb">当前账号</span><span class="vl">${esc(ac)}${a.pass?" 🔒":""}</span></div>
+    <div class="crow" id="accLoginRow"><span class="lb">☁ 账号登陆（云同步）</span><span class="vl">›</span></div>
     <div class="crow"><span class="lb">当前账本</span><span class="vl">${esc(curLedgerName())}</span></div>
-    <div class="crow"><span class="lb">云端位置</span><span class="vl">${c.gistId ? esc(c.gistId) : "未创建"}</span></div>
     <div class="crow" id="accSyncRow"><span class="lb">立即同步</span><span class="vl">${esc(syncTxt)}</span></div>
     <div class="crow" id="accPushRow"><span class="lb">上传到云端</span><span class="vl">本机 → Gist ›</span></div>
     <div class="crow" id="accPullRow"><span class="lb">从云端下载</span><span class="vl">Gist → 本机 ›</span></div>
     <div class="crow" id="accCfgRow"><span class="lb">修改云端配置</span><span class="vl">Token / Gist ›</span></div>`;
   $("#accLoginRow").onclick = () => { closeSettings(); openLogin(); };
-  $("#accLogoutRow").onclick = () => { closeSettings(); logout(); };
   $("#accSyncRow").onclick = async () => {
     try{ await gistDownload(); toast("已从云端同步 ✓"); }
     catch(e){ try{ await gistUpload(); toast("已上传到云端 ✓"); }catch(e2){ toast("同步失败：" + e.message, "err"); } }
@@ -1935,9 +1928,8 @@ function delAccount(ac){
   toast("已删除账号「" + ac + "」");
 }
 
-/* 设置面板里的「新增账本 / 新增账号」按钮 */
+/* 设置面板里的「新增账本」按钮 */
 $("#btnAddLedger2").onclick = () => addLedger();
-$("#btnAddAccount2").onclick = () => addAccount();
 
 /* 启动：若当前账号已配置云端，静默拉取一次（不弹任何登录框） */
 function cloudBoot(){
@@ -1952,7 +1944,7 @@ function cloudBoot(){
 /* ---- 设置面板 ---- */
 function openSettings(){
   renderAccountBox();
-  renderLedgerMgmt(); renderAcctMgmt();
+  renderLedgerMgmt();
   $("#setSheet").classList.add("on");
   $("#setMask").classList.add("on");
 }
@@ -2420,16 +2412,13 @@ function renderAll(){
   renderTotal(); renderList(); renderCmp();
 }
 S = load();
-S.cur = "";                       // 默认游客身份：启动不自动登录任何账号
+/* 默认直接以 chenjy 账号进入（打开即可看账本，不强制登录）；登录/云同步在设置页触发 */
+if (!S.cur || !S.accounts[S.cur]) S.cur = "chenjy";
 if (S._cleaned){ delete S._cleaned; toast("已清除示例数据，现在从 0 条开始"); }
+initRange(); buildPointRange(); syncPointRange();
+renderAll();
 renderAccountBox();
-if (!S.cur){
-  openLogin();                    // 游客 → 展示「账号登陆」界面
-} else {
-  initRange(); buildPointRange(); syncPointRange();
-  renderAll();
-  cloudBoot();
-}
+cloudBoot();
 save();
 </script>
 
