@@ -1,0 +1,16 @@
+{
+  "name": "打工人小账本",
+  "short_name": "小账本",
+  "description": "离线记账工作台：随时记一笔（含支出对象），按年/月/日查看收支对比、区间总计与可筛选明细详单",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFCF3",
+  "theme_color": "#FFFCF3",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
