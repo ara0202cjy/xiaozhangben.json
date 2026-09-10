@@ -186,6 +186,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 .fpill.on .px{background:rgba(255,255,255,.38);color:#fff}
 .fpill .px:active{background:var(--coral);color:#fff}
 .fp-none{font-size:10px;color:var(--ink3);font-weight:600;padding:3px 2px}
+.mg-cap{font-size:var(--fs-xs);font-weight:800;color:var(--ink2);margin:6px 0 3px;padding-left:2px}
 .kw{width:100%;flex:none}
 .lsum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:none}
 .lsum div{background:var(--cream2);border:1px solid var(--line);border-radius:10px;padding:5px 4px;text-align:center}
@@ -386,6 +387,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-note" viewBox="0 0 24 24"><path d="M5.5 3.6h13v16.8H5.5z"/><path d="M9 8.4h6M9 12h6M9 15.6h3.6"/></symbol>
+<symbol id="i-tag" viewBox="0 0 24 24"><path d="M3.6 12.4 11 5h7v7l-7.4 7.4a1.8 1.8 0 0 1-2.6 0l-4.4-4.4a1.8 1.8 0 0 1 0-2.6z"/><circle cx="14.6" cy="9.4" r="1.4" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19.4h16"/><path d="M6.6 16.4V9.6M11.4 16.4V5.4M16.2 16.4v-5.6"/></symbol>
 <symbol id="i-list" viewBox="0 0 24 24"><path d="M8.4 6.6h11M8.4 12h11M8.4 17.4h11M4.4 6.6h.02M4.4 12h.02M4.4 17.4h.02" stroke-width="2.2"/></symbol>
 <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3.6 7.6h13.8a2.4 2.4 0 0 1 2.4 2.4v7.4a2.4 2.4 0 0 1-2.4 2.4H6a2.4 2.4 0 0 1-2.4-2.4z"/><path d="M3.6 7.6V6a2 2 0 0 1 2-2h10.4"/><circle cx="16.2" cy="13.5" r="1.1" fill="currentColor" stroke="none"/></symbol>
@@ -588,6 +590,33 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
     </details>
 
     <details class="fold">
+      <summary class="fh"><svg class="ic"><use href="#i-tag"/></svg><b>分类与对象</b>
+        <span class="t">可增删改</span><span class="arr"></span></summary>
+      <div class="fbody">
+        <div class="mg-cap">支出分类</div>
+        <div id="catExpList" class="mgmt-list"></div>
+        <button class="weakbtn" id="btnAddCatExp" style="margin:6px 0 10px">＋ 新增支出分类</button>
+        <div class="mg-cap">收入分类</div>
+        <div id="catIncList" class="mgmt-list"></div>
+        <button class="weakbtn" id="btnAddCatInc" style="margin:6px 0 10px">＋ 新增收入分类</button>
+        <div class="mg-cap">支出对象</div>
+        <div id="targetList" class="mgmt-list"></div>
+        <button class="weakbtn" id="btnAddTarget">＋ 新增支出对象</button>
+      </div>
+    </details>
+
+    <details class="fold">
+      <summary class="fh"><svg class="ic"><use href="#i-note"/></svg><b>高频词（按分类）</b>
+        <span class="t">每个分类不同</span><span class="arr"></span></summary>
+      <div class="fbody">
+        <div class="filtrow"><span class="flab">分类</span><div class="fpills wrap" id="noteCatTabs"></div></div>
+        <div id="noteEditList" class="mgmt-list" style="margin-top:6px"></div>
+        <button class="weakbtn" id="btnAddNote2" style="margin-top:8px">＋ 新增高频词</button>
+        <div class="mig-tip">高频词不会自动生成，只能在这里或记账页手动增删；<b>每个分类有各自独立的高频词</b>。</div>
+      </div>
+    </details>
+
+    <details class="fold">
       <summary class="fh"><svg class="ic"><use href="#i-wallet"/></svg><b>数据迁移</b>
         <span class="t">导出 / 导入 Excel</span><span class="arr"></span></summary>
       <div class="fbody">
@@ -636,6 +665,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       <input class="inp" id="eTime" type="time">
     </div>
     <input class="inp" id="eNote" placeholder="备注（选填）" maxlength="24">
+    <div class="quicknotes" id="eQuickNotes" style="margin-top:6px"></div>
     <div class="sh-btns">
       <button class="sh-cancel" id="eCancel">取消</button>
       <button class="sh-save" id="eSave"><svg class="ic"><use href="#i-check"/></svg>保存修改</button>
@@ -699,9 +729,25 @@ const CATS = {
           {id:"other",name:"其他",ic:"c-other"} ]
   }
 };
-const catOf = (t, id) => {
-  const list = t === "expense" ? CATS.expense : (CATS.income[curProfile()] || CATS.income.cjy);
-  return list.find(c => c.id === id) || list[list.length-1];
+/* 取某账本的分类列表：若该账本已自定义（ledger.cats）则用自定义的，否则回退全局默认 */
+function getCats(lg, type){
+  if (lg.cats && Array.isArray(lg.cats[type]) && lg.cats[type].length) return lg.cats[type];
+  return type === "expense" ? CATS.expense : (CATS.income[lg.profile] || CATS.income.cjy);
+}
+function getTargets(lg){
+  if (lg.targets && Array.isArray(lg.targets.list) && lg.targets.list.length) return lg.targets;
+  return targetsOf(lg.profile);
+}
+function getNotes(lg, catId){
+  if (!lg.notes) lg.notes = {};
+  return lg.notes[catId] || [];
+}
+/* 分类解析：优先账本自定义分类，再回退全局（兼容旧记录 id），最后取末位 */
+const catOf = (t, id, lg) => {
+  lg = lg || curAcc();
+  let c = getCats(lg, t).find(x => x.id === id);
+  if (!c){ const g = t === "expense" ? CATS.expense : (CATS.income[lg.profile] || CATS.income.cjy); c = g.find(x => x.id === id); }
+  return c || getCats(lg, t)[getCats(lg, t).length-1] || { id:"other", name:"其他", ic:"c-other" };
 };
 const TARGETS = {
   cjy:{ list:["家庭","队友","个人","亲子","其他"], def:"个人" },
@@ -727,7 +773,7 @@ const CAT_MIGRATE = { snack:"food", home:"other", med:"other" };
    每个账本独立记录与统计。账本带 profile（收入分类集：cjy / lc）与 mask（收入遮罩）。 */
 function makeLedger(name, profile, mask){
   return { id: uid(), name: name || "新账本", profile: profile || "cjy", mask: !!mask,
-           records: [], quickNotes: [] };
+           records: [], cats: null, targets: null, notes: {} };
 }
 function normRecs(records){
   records = Array.isArray(records) ? records : [];
@@ -737,7 +783,7 @@ function normRecs(records){
 function makeLedgerFrom(name, profile, mask, records, quickNotes){
   const lg = makeLedger(name, profile, mask);
   lg.records = normRecs(records);
-  lg.quickNotes = Array.isArray(quickNotes) ? quickNotes.slice() : topNotesFrom(lg.records);
+  lg.notes = {};                 // 高频词不再自动生成，初始为空，需手动添加
   return lg;
 }
 /* 账号：当前账本 cur(数组下标) + 本地密码 pass + 云端配置 cloud + 账本数组 ledgers */
@@ -792,9 +838,9 @@ function normalizeAcc(acc, key){
   if (Array.isArray(acc.ledgers)){
     ledgers = acc.ledgers.map(lg => {
       const o = { id: lg.id || uid(), name: lg.name || "账本",
-                  profile: lg.profile || "cjy", mask: !!lg.mask, records: [], quickNotes: [] };
+                  profile: lg.profile || "cjy", mask: !!lg.mask, records: [], cats: null, targets: null, notes: {} };
       o.records = normRecs(lg.records);
-      o.quickNotes = Array.isArray(lg.quickNotes) ? lg.quickNotes : topNotesFrom(o.records);
+      o.notes = {};
       return o;
     });
     if (!ledgers.length) ledgers = [ makeLedger("主账本","cjy",false) ];
@@ -996,17 +1042,17 @@ function go(t){
 let aType = "expense", aCat = "food", aTarget = "个人";
 
 function renderCats(){
-  const list = aType === "expense" ? CATS.expense : (CATS.income[curProfile()] || CATS.income.cjy);
+  const list = getCats(curAcc(), aType);
   if (!list.some(c => c.id === aCat)) aCat = list[0].id;
   $("#catGrid").innerHTML = list.map(c =>
     `<button data-c="${c.id}" class="${c.id===aCat?"on":""}"><svg class="ic"><use href="#${c.ic}"/></svg><span>${c.name}</span></button>`
   ).join("");
 }
 function renderTargets(){
-  const ts = targetsOf(curProfile());
-  if (ts.list.indexOf(aTarget) < 0) aTarget = ts.def;   // 切账号后回落到该账号默认
+  const ts = getTargets(curAcc());
+  if (ts.list.indexOf(aTarget) < 0) aTarget = ts.def;   // 切账本后回落到该账本默认
   $("#objChips").innerHTML = ts.list.map(t =>
-    `<button data-t="${t}" class="${t===aTarget?"on":""}">${t}</button>`).join("");
+    `<button data-t="${esc(t)}" class="${t===aTarget?"on":""}">${esc(t)}</button>`).join("");
 }
 function showObj(){ $("#objWrap").style.display = aType === "expense" ? "" : "none"; }
 function renderAcctChips(){
@@ -1053,22 +1099,26 @@ function addAccount(){
   toast("已新增账号「" + name + "」");
 }
 
-function topNotes(){ return topNotesFrom(curAcc().records); }
+/* 高频词：按「当前分类」存储，每个分类各自独立，不自动生成（仅手动增删） */
 function renderQuickNotes(){
   const box = $("#quickNotes");
-  box.innerHTML = curAcc().quickNotes.map(n =>
+  const arr = getNotes(curAcc(), aCat);
+  box.innerHTML = arr.map(n =>
     `<span class="qn" data-n="${esc(n)}">${esc(n)}<span class="x" data-x="1" aria-label="删除">×</span></span>`).join("")
     + `<span class="qn add" data-add="1"><svg class="ic"><use href="#i-plus"/></svg>添加</span>`;
 }
-function addNote(v){
+function addNote(v, cat){
+  cat = cat || aCat;
   v = (v||"").trim().slice(0, 24);
-  if (!v || curAcc().quickNotes.indexOf(v) >= 0){ renderQuickNotes(); return; }
-  curAcc().quickNotes.push(v);
-  if (curAcc().quickNotes.length > 20) curAcc().quickNotes.shift();
+  const a = curAcc(); if (!a.notes) a.notes = {};
+  if (!a.notes[cat]) a.notes[cat] = [];
+  if (!v || a.notes[cat].indexOf(v) >= 0){ renderQuickNotes(); return; }
+  a.notes[cat].push(v);
   save(); renderQuickNotes();
 }
-function removeNote(v){
-  curAcc().quickNotes = curAcc().quickNotes.filter(x => x !== v);
+function removeNote(v, cat){
+  cat = cat || aCat;
+  const a = curAcc(); if (a.notes && a.notes[cat]) a.notes[cat] = a.notes[cat].filter(x => x !== v);
   save(); renderQuickNotes();
 }
 function startAddNote(){
@@ -1102,10 +1152,6 @@ function saveRecord(){
     target: aType === "expense" ? aTarget : "", note, demo: false
   };
   curAcc().records.push(rec); save();
-  if (note && curAcc().quickNotes.indexOf(note) < 0){
-    curAcc().quickNotes.push(note);
-    if (curAcc().quickNotes.length > 20) curAcc().quickNotes.shift();
-  }
   showSaved(rec);
   $("#amtIn").value = ""; $("#note").value = "";
   $("#amtIn").focus();
@@ -1180,7 +1226,7 @@ function renderTotal(){
    页 4 · 详单
    ========================================================= */
 function renderFiltPills(){
-  const cats = CATS.expense;
+  const cats = getCats(curAcc(), "expense");
   $("#fCatPills").innerHTML =
     `<span class="fpill all ${listCats.size===0?"on":""}" data-cat="__all__">全部</span>` +
     cats.map(c => `<span class="fpill ${listCats.has(c.id)?"on":""}" data-cat="${c.id}">${c.name}</span>`).join("");
@@ -1190,20 +1236,25 @@ function renderFiltPills(){
     `<span class="fpill all ${listNotes.size===0?"on":""}" data-note="__all__">全部</span>` +
     (notes.length
       ? notes.map(n =>
-          `<span class="fpill ${listNotes.has(n)?"on":""}" data-note="${esc(n)}">${esc(n)}<span class="px" data-del-note="${esc(n)}" aria-label="删除">×</span></span>`
+          `<span class="fpill ${listNotes.has(n)?"on":""}" data-note="${esc(n)}">${esc(n)}</span>`
         ).join("")
       : `<span class="fp-none">暂无高频词</span>`);
 }
-/* 高频词：按记录中出现频次从高到低，最多 8 个（只保留真实出现过的） */
+/* 高频词：聚合当前账本所有分类的词；仅显示记录中真实出现过的，最多 8 个 */
 const NOTE_PILL_MAX = 8;
 function noteFreq(){
   const cnt = {};
   curAcc().records.forEach(r => { const n = (r.note||"").trim(); if (n) cnt[n] = (cnt[n]||0) + 1; });
   return cnt;
 }
+function allNotes(){
+  const a = curAcc(), set = [];
+  if (a.notes) Object.keys(a.notes).forEach(k => a.notes[k].forEach(n => { if (set.indexOf(n) < 0) set.push(n); }));
+  return set;
+}
 function topFilterNotes(){
   const cnt = noteFreq();
-  return curAcc().quickNotes.filter(n => cnt[n] > 0).sort((a,b) => cnt[b] - cnt[a]).slice(0, NOTE_PILL_MAX);
+  return allNotes().filter(n => cnt[n] > 0).sort((a,b) => cnt[b] - cnt[a]).slice(0, NOTE_PILL_MAX);
 }
 function renderList(){
   let rs = curAcc().records.filter(inRange).sort((a,b) =>
@@ -1257,7 +1308,7 @@ function openEdit(id){
   if (!r) return;
   editing = {
     id: r.id, type: r.type, cat: r.cat,
-    target: r.target || targetsOf(curProfile()).def
+    target: r.target || getTargets(curAcc()).def
   };
   $("#eAmt").value  = r.amount;
   $("#eNote").value = r.note || "";
@@ -1280,16 +1331,25 @@ function renderEditForm(){
   $("#eIncome").classList.toggle("on", !isExp);
   $("#eObjWrap").style.display = isExp ? "" : "none";
 
-  const list = isExp ? CATS.expense : (CATS.income[curProfile()] || CATS.income.cjy);
+  const list = getCats(curAcc(), isExp ? "expense" : "income");
   if (!list.some(c => c.id === editing.cat)) editing.cat = list[0].id;
   $("#eCatGrid").innerHTML = list.map(c =>
-    `<button data-c="${c.id}" class="${c.id===editing.cat?"on":""}"><svg class="ic"><use href="#${c.ic}"/></svg><span>${c.name}</span></button>`
+    `<button data-c="${c.id}" class="${c.id===editing.cat?"on":""}"><svg class="ic"><use href="#${c.ic}"/></svg><span>${esc(c.name)}</span></button>`
   ).join("");
 
-  const ts = targetsOf(curProfile());
+  const ts = getTargets(curAcc());
   if (ts.list.indexOf(editing.target) < 0) editing.target = ts.def;
   $("#eObjChips").innerHTML = ts.list.map(t =>
-    `<button data-t="${t}" class="${t===editing.target?"on":""}">${t}</button>`).join("");
+    `<button data-t="${esc(t)}" class="${t===editing.target?"on":""}">${esc(t)}</button>`).join("");
+
+  // 编辑弹层内的高频词（按当前分类），点击填入备注
+  const ebox = $("#eQuickNotes");
+  if (ebox){
+    const arr = getNotes(curAcc(), editing.cat);
+    ebox.innerHTML = arr.map(n =>
+      `<span class="qn" data-en="${esc(n)}">${esc(n)}<span class="x" data-ex="1" aria-label="删除">×</span></span>`).join("")
+      + `<span class="qn add" data-eadd="1"><svg class="ic"><use href="#i-plus"/></svg>添加</span>`;
+  }
 }
 function saveEdit(){
   if (!editing) return;
@@ -1369,12 +1429,12 @@ function syncPointRange(){
 /* =========================================================
    事件绑定
    ========================================================= */
-$("#tExpense").onclick = () => { aType = "expense"; $("#tExpense").classList.add("on"); $("#tIncome").classList.remove("on"); renderCats(); showObj(); };
-$("#tIncome").onclick  = () => { aType = "income";  $("#tIncome").classList.add("on");  $("#tExpense").classList.remove("on"); renderCats(); showObj(); };
+$("#tExpense").onclick = () => { aType = "expense"; $("#tExpense").classList.add("on"); $("#tIncome").classList.remove("on"); renderCats(); showObj(); renderQuickNotes(); };
+$("#tIncome").onclick  = () => { aType = "income";  $("#tIncome").classList.add("on");  $("#tExpense").classList.remove("on"); renderCats(); showObj(); renderQuickNotes(); };
 
 $("#catGrid").onclick = e => {
   const b = e.target.closest("[data-c]"); if (!b) return;
-  aCat = b.dataset.c; renderCats();
+  aCat = b.dataset.c; renderCats(); renderQuickNotes();
 };
 $("#objChips").onclick = e => {
   const b = e.target.closest("[data-t]"); if (!b) return;
@@ -1431,16 +1491,6 @@ $("#fCatPills").onclick = e => {
   renderFiltPills(); renderList();
 };
 $("#fNotePills").onclick = e => {
-  const del = e.target.closest("[data-del-note]");
-  if (del){                                   // 删掉这个高频词（同时移除记账页的快捷备注）
-    e.stopPropagation();
-    const v = del.dataset.delNote;
-    removeNote(v);
-    listNotes.delete(v);
-    renderFiltPills(); renderList();
-    toast("已移除高频词「" + v + "」");
-    return;
-  }
   const p = e.target.closest("[data-note]"); if (!p) return;
   const v = p.dataset.note;
   if (v === "__all__") listNotes.clear();
@@ -1489,6 +1539,15 @@ $("#eCatGrid").onclick = e => {
 $("#eObjChips").onclick = e => {
   const b = e.target.closest("[data-t]"); if (!b || !editing) return;
   editing.target = b.dataset.t; renderEditForm();
+};
+$("#eQuickNotes").onclick = e => {
+  if (!editing) return;
+  const addBtn = e.target.closest("[data-eadd]");
+  if (addBtn){ const v = (prompt("新高频词：","")||"").trim().slice(0,24); if (v) addNote(v, editing.cat); renderEditForm(); return; }
+  const x = e.target.closest("[data-ex]");
+  if (x){ const chip = x.closest("[data-en]"); if (chip) removeNote(chip.dataset.en, editing.cat); renderEditForm(); return; }
+  const chip = e.target.closest("[data-en]");
+  if (chip){ $("#eNote").value = chip.dataset.en; $("#eNote").focus(); }
 };
 
 /* =========================================================
@@ -1952,6 +2011,165 @@ function delAccount(ac){
   toast("已删除账号「" + ac + "」");
 }
 
+/* ---------- 分类 / 对象 / 高频词 管理（可增删改） ---------- */
+function targetDef(a){ return (a.targets && a.targets.def) || targetsOf(a.profile).def; }
+function ensureCats(){
+  const a = curAcc();
+  if (!a.cats) a.cats = {
+    expense: CATS.expense.map(c => ({ id:c.id, name:c.name, ic:c.ic })),
+    income: (CATS.income[a.profile] || CATS.income.cjy).map(c => ({ id:c.id, name:c.name, ic:c.ic }))
+  };
+}
+function ensureTargets(){
+  const a = curAcc();
+  if (!a.targets) a.targets = { list: targetsOf(a.profile).list.slice(), def: targetsOf(a.profile).def };
+}
+let noteEditCat = null;
+function renderCatMgmt(){
+  const a = curAcc();
+  const exp = (a.cats && a.cats.expense) || CATS.expense;
+  const inc = (a.cats && a.cats.income) || (CATS.income[a.profile] || CATS.income.cjy);
+  const tg  = (a.targets && a.targets.list) || targetsOf(a.profile).list;
+  const td  = targetDef(a);
+  $("#catExpList").innerHTML = exp.map(c =>
+    `<div class="mi"><span class="mi-name">${esc(c.name)}</span><span class="mi-acts">
+      <button class="mi-act" data-act="ren" data-ct="expense" data-id="${esc(c.id)}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>
+      <button class="mi-act" data-act="del" data-ct="expense" data-id="${esc(c.id)}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
+    </span></div>`).join("");
+  $("#catIncList").innerHTML = inc.map(c =>
+    `<div class="mi"><span class="mi-name">${esc(c.name)}</span><span class="mi-acts">
+      <button class="mi-act" data-act="ren" data-ct="income" data-id="${esc(c.id)}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>
+      <button class="mi-act" data-act="del" data-ct="income" data-id="${esc(c.id)}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
+    </span></div>`).join("");
+  $("#targetList").innerHTML = tg.map((t,i) =>
+    `<div class="mi"><span class="mi-name">${esc(t)}${t===td?" · 默认":""}</span><span class="mi-acts">
+      <button class="mi-act" data-act="ren" data-ti="${i}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>
+      <button class="mi-act" data-act="del" data-ti="${i}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
+    </span></div>`).join("");
+}
+function addCat(type){
+  ensureCats();
+  const name = (prompt("新分类名称：", "新分类") || "").trim();
+  if (!name) return;
+  curAcc().cats[type].push({ id:"c"+uid().slice(0,6), name, ic:"c-other" });
+  save(); afterCatChange(); toast("已新增分类「"+name+"」");
+}
+function renameCat(type, id){
+  ensureCats();
+  const c = curAcc().cats[type].find(x => x.id === id); if (!c) return;
+  const name = (prompt("分类名称：", c.name) || "").trim();
+  if (!name) return;
+  c.name = name; save(); afterCatChange(); toast("已重命名");
+}
+function delCat(type, id){
+  ensureCats();
+  const list = curAcc().cats[type];
+  if (list.length <= 1){ toast("至少保留 1 个分类","err"); return; }
+  const c = list.find(x => x.id === id); if (!c) return;
+  if (!confirm(`删除分类「${c.name}」？\n该分类下的记录会改归到「${list[0].name}」。`)) return;
+  curAcc().records.forEach(r => { if (r.type === type && r.cat === id) r.cat = list[0].id; });
+  if (curAcc().notes && curAcc().notes[id]) delete curAcc().notes[id];
+  curAcc().cats[type] = list.filter(x => x.id !== id);
+  if (aCat === id) aCat = list[0].id;
+  save(); afterCatChange(); toast("已删除分类「"+c.name+"」");
+}
+function addTarget(){
+  ensureTargets();
+  const name = (prompt("新支出对象：", "新对象") || "").trim();
+  if (!name) return;
+  const t = curAcc().targets;
+  if (t.list.indexOf(name) >= 0){ toast("该对象已存在","err"); return; }
+  t.list.push(name); save(); afterTargetChange(); toast("已新增对象「"+name+"」");
+}
+function renameTarget(i){
+  ensureTargets();
+  const t = curAcc().targets;
+  const name = (prompt("对象名称：", t.list[i]) || "").trim();
+  if (!name) return;
+  t.list[i] = name; save(); afterTargetChange(); toast("已重命名");
+}
+function delTarget(i){
+  ensureTargets();
+  const t = curAcc().targets;
+  if (t.list.length <= 1){ toast("至少保留 1 个对象","err"); return; }
+  const name = t.list[i];
+  if (!confirm(`删除对象「${name}」？\n相关记录的对象会改成「${t.def}」。`)) return;
+  curAcc().records.forEach(r => { if (r.target === name) r.target = t.def; });
+  t.list.splice(i, 1);
+  if (t.list.indexOf(t.def) < 0) t.def = t.list[0];
+  if (aTarget === name) aTarget = t.def;
+  save(); afterTargetChange(); toast("已删除对象「"+name+"」");
+}
+function afterCatChange(){
+  renderCatMgmt(); renderCats(); renderEditForm(); renderFiltPills();
+  renderNoteMgr(); renderQuickNotes(); renderTotal(); renderList(); renderCmp(); renderAccountBox();
+}
+function afterTargetChange(){
+  renderCatMgmt(); renderTargets(); renderEditForm(); renderTotal(); renderList(); renderCmp();
+}
+/* 高频词管理（按分类）：每个分类有各自独立的高频词 */
+function renderNoteMgr(){
+  const a = curAcc();
+  const exp = (a.cats && a.cats.expense) || CATS.expense;
+  const inc = (a.cats && a.cats.income) || (CATS.income[a.profile] || CATS.income.cjy);
+  const all = exp.map(c => ({ id:c.id, name:c.name }))
+            .concat(inc.map(c => ({ id:c.id, name:c.name })));
+  if (!noteEditCat || !all.some(c => c.id === noteEditCat)) noteEditCat = all[0] && all[0].id;
+  $("#noteCatTabs").innerHTML = all.map(c =>
+    `<span class="fpill ${c.id===noteEditCat?"on":""}" data-nc="${esc(c.id)}">${esc(c.name)}</span>`).join("");
+  const arr = getNotes(a, noteEditCat);
+  $("#noteEditList").innerHTML = (arr.length
+    ? arr.map(n =>
+        `<div class="mi"><span class="mi-name">${esc(n)}</span><span class="mi-acts">
+          <button class="mi-act" data-act="delnote" data-v="${esc(n)}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
+        </span></div>`).join("")
+    : `<div class="fp-none">该分类暂无高频词，点下方「＋ 新增高频词」添加</div>`);
+}
+function addNote2(){
+  const v = (prompt("新高频词：", "") || "").trim().slice(0, 24);
+  if (!v) return;
+  const a = curAcc(); if (!a.notes) a.notes = {};
+  if (!a.notes[noteEditCat]) a.notes[noteEditCat] = [];
+  if (a.notes[noteEditCat].indexOf(v) >= 0){ toast("该分类已有此高频词","err"); return; }
+  a.notes[noteEditCat].push(v); save(); renderNoteMgr(); renderQuickNotes(); toast("已添加");
+}
+function delNote2(v){
+  const a = curAcc(); if (a.notes && a.notes[noteEditCat])
+    a.notes[noteEditCat] = a.notes[noteEditCat].filter(x => x !== v);
+  save(); renderNoteMgr(); renderQuickNotes();
+}
+
+$("#btnAddCatExp").onclick = () => addCat("expense");
+$("#btnAddCatInc").onclick = () => addCat("income");
+$("#btnAddTarget").onclick  = addTarget;
+$("#catExpList").onclick = e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const id = b.dataset.id;
+  if (b.dataset.act === "ren") renameCat("expense", id);
+  else delCat("expense", id);
+};
+$("#catIncList").onclick = e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const id = b.dataset.id;
+  if (b.dataset.act === "ren") renameCat("income", id);
+  else delCat("income", id);
+};
+$("#targetList").onclick = e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const i = parseInt(b.dataset.ti, 10);
+  if (b.dataset.act === "ren") renameTarget(i);
+  else delTarget(i);
+};
+$("#noteCatTabs").onclick = e => {
+  const p = e.target.closest("[data-nc]"); if (!p) return;
+  noteEditCat = p.dataset.nc; renderNoteMgr();
+};
+$("#btnAddNote2").onclick = addNote2;
+$("#noteEditList").onclick = e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "delnote") delNote2(b.dataset.v);
+};
+
 /* 设置面板里的「新增账本」按钮 */
 $("#btnAddLedger2").onclick = () => addLedger();
 
@@ -1969,6 +2187,8 @@ function cloudBoot(){
 function openSettings(){
   renderAccountBox();
   renderLedgerMgmt();
+  renderCatMgmt();
+  renderNoteMgr();
   $("#setSheet").classList.add("on");
   $("#setMask").classList.add("on");
 }
@@ -2297,16 +2517,15 @@ function normTime(s){
 //XLSX-END
 
 /* ---------- 导出 / 导入 业务层 ---------- */
-function catNameForProfile(profile, r){
-  const list = r.type === "expense" ? CATS.expense : (CATS.income[profile] || CATS.income.cjy);
-  const c = list.find(x => x.id === r.cat) || list[list.length-1];
-  return c.name;
+function catNameForProfile(lg, r){
+  return catOf(r.type, r.cat, lg).name;
 }
-function resolveCatId(type, profile, raw){
+function resolveCatIdL(lg, type, raw){
   raw = (raw||"").trim();
-  const list = type === "expense" ? CATS.expense : (CATS.income[profile] || CATS.income.cjy);
+  const list = getCats(lg, type);
   let c = list.find(x => x.id === raw) || list.find(x => x.name === raw);
-  return c ? c.id : "other";
+  if (!c && CAT_MIGRATE[raw]) return CAT_MIGRATE[raw];
+  return c ? c.id : list[0].id;
 }
 function matchHeader(h){
   h = (h||"").trim();
@@ -2332,7 +2551,7 @@ function exportXlsx(){
           r.date,
           r.time || "",
           r.type === "income" ? "收入" : "支出",
-          catNameForProfile(lg.profile, r),
+          catNameForProfile(lg, r),
           r.type === "income" ? "" : (r.target || ""),
           r.amount,
           r.note || ""
@@ -2402,9 +2621,10 @@ function applyImport(matrix, fileName){
     const amtRaw = (iAmt >= 0 ? row[iAmt] : "") || "";
     const amount = parseFloat(String(amtRaw).replace(/[¥￥,\s]/g, ""));
     if (!isFinite(amount) || !(amount > 0)){ skip++; continue; }
-    const cat = resolveCatId(type, profile, iCat >= 0 ? row[iCat] : "");
+    const cat = resolveCatIdL(S.accounts[ac].ledgers[ledIdx], type, iCat >= 0 ? row[iCat] : "");
     let target = (iObj >= 0 ? row[iObj] : "") || "";
-    if (type === "expense"){ if (!ALL_TARGETS.includes(target)) target = targetsOf(profile).def; }
+    const _lg = S.accounts[ac].ledgers[ledIdx];
+    if (type === "expense"){ if (!getTargets(_lg).list.includes(target)) target = getTargets(_lg).def; }
     else target = "";
     const time = normTime(iTime >= 0 ? row[iTime] : "");
     const note = ((iNote >= 0 ? row[iNote] : "") || "").slice(0, 24);
@@ -2430,14 +2650,13 @@ function applyImport(matrix, fileName){
     const ledIdx = ensureLedger(ac, ledName);
     const lg = S.accounts[ac].ledgers[ledIdx];
     lg.records.push(...byKey[k]);
-    const existing = lg.quickNotes.slice();
-    const newNotes = [];
+    if (!lg.notes) lg.notes = {};
     byKey[k].forEach(r => {
-      if (r.note && existing.indexOf(r.note) < 0 && newNotes.indexOf(r.note) < 0) newNotes.push(r.note);
+      if (!r.note) return;
+      if (!lg.notes[r.cat]) lg.notes[r.cat] = [];
+      if (lg.notes[r.cat].indexOf(r.note) < 0) lg.notes[r.cat].push(r.note);
+      if (lg.notes[r.cat].length > 40) lg.notes[r.cat] = lg.notes[r.cat].slice(0, 40);
     });
-    let arr = newNotes.concat(existing);   // 新导入的排在前面，超 20 时优先保留
-    if (arr.length > 20) arr = arr.slice(0, 20);
-    lg.quickNotes = arr;
   });
   save();
   renderAcctChips(); renderLedgerChips(); renderLedgerMgmt(); renderAcctMgmt();
