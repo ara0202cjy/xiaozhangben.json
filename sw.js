@@ -1,4 +1,4 @@
-const CACHE = "dgr-xiaozhangben-v4";
+const CACHE = "dgr-xiaozhangben-v5";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon.svg", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
