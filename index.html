@@ -574,7 +574,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
           <span class="lb">🔒 开启防偷窥</span>
           <span class="vl" id="privacyState">关</span>
         </div>
-        <div class="mig-tip">开启后，所有<b>金额</b>都会变成 <b>¥••••</b>，旁边有人也看不清具体数目。在公共场合临时隐藏，需要时再点顶部<b>眼睛图标</b>恢复。开关状态会自动保存。</div>
+        <div class="mig-tip">开启后，<b>收入与结余</b>会变成 <b>¥••••</b> 隐藏起来，旁边有人也看不清你赚多少、剩多少；<b>支出仍然可见</b>，方便日常核对花销。需要时再点顶部<b>眼睛图标</b>恢复。开关状态会自动保存。</div>
       </div>
     </details>
 
@@ -668,8 +668,10 @@ function money(n){
 const money0 = n => (n<0?"-¥":"¥") + Math.round(Math.abs(n)).toLocaleString("zh-CN");
 const esc = s => String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
-/* 金额显示：隐私模式（防偷窥）开启时，隐藏具体数字、仅保留符号 */
-function inkMask(formatted){
+/* 金额显示：隐私模式（防偷窥）开启时隐藏「收入/结余」等敏感数字、仅保留符号；
+   支出类传 hide=false 则不隐藏（支出可看，方便日常核对花销） */
+function inkMask(formatted, hide){
+  if (hide === false) return formatted;          // 明确不隐藏（支出）
   if (!S || !S.privacy) return formatted;
   if (formatted.charAt(0) === "-") return "-¥••••";
   return "¥••••";
@@ -961,7 +963,7 @@ function showSaved(rec){
   el.className = "toast act";
   el.innerHTML = `<svg class="ic"><use href="#i-check"/></svg><span class="tx"></span><button class="undo" type="button">撤销</button>`;
   el.querySelector(".tx").textContent =
-    `已保存：${rec.type === "income" ? "收入" : "支出"} · ${c.name}${who} · ${inkMask(money(rec.amount))} · ${dt}`;
+    `已保存：${rec.type === "income" ? "收入" : "支出"} · ${c.name}${who} · ${rec.type === "income" ? inkMask(money(rec.amount)) : money(rec.amount)} · ${dt}`;
   el.querySelector(".undo").onclick = () => {
     curAcc().records = curAcc().records.filter(x => x.id !== rec.id);
     save();
@@ -1115,7 +1117,7 @@ function saveRecord(){
    ========================================================= */
 function cmpLine(val, maxV, color, inc){
   const pct = maxV > 0 ? Math.max(2, val/maxV*100) : 0;
-  const txt = (inc?"+":"−") + inkMask(money0(val));
+  const txt = (inc?"+":"−") + (inc ? inkMask(money0(val)) : money0(val));
   const shown = txt;
   return `<div class="cmp-line">
     <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
@@ -1148,7 +1150,7 @@ function barRow(name, ic, val, max, pct, color, note){
   return `<div class="bar-row">
     <div class="top">
       <div class="nm">${ic?`<svg class="ic"><use href="#${ic}"/></svg>`:""}<span>${esc(name)}</span></div>
-      <div class="vv">${inkMask(money0(val))}${note?`<em>${note}</em>`:""}</div>
+      <div class="vv">${inkMask(money0(val), false)}${note?`<em>${note}</em>`:""}</div>
     </div>
     <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
   </div>`;
@@ -1156,7 +1158,7 @@ function barRow(name, ic, val, max, pct, color, note){
 function renderTotal(){
   const s = stat(), maxIE = Math.max(s.income, s.expense, 1);
   $("#sIn").innerHTML     = inkMask(money0(s.income));
-  $("#sOut").textContent  = inkMask(money0(s.expense));
+  $("#sOut").textContent  = inkMask(money0(s.expense), false);
   $("#sBal").innerHTML    = inkMask(money0(s.balance));
   $("#sBal").className = "v num " + (s.balance >= 0 ? "pos" : "neg");
   $("#catTag").textContent = s.n ? `${s.n} 笔` : "—";
@@ -1219,7 +1221,7 @@ function renderList(){
   rs.forEach(r => { if (r.type === "income") inc += r.amount; else exp += r.amount; });
   $("#listSum").innerHTML = `
     <div><div class="k">收入</div><div class="v pos">${inkMask(money0(inc))}</div></div>
-    <div><div class="k">支出</div><div class="v out">${inkMask(money0(exp))}</div></div>
+    <div><div class="k">支出</div><div class="v out">${inkMask(money0(exp), false)}</div></div>
     <div><div class="k">净额</div><div class="v ${inc-exp>=0?"pos":""}">${inkMask(money0(inc-exp))}</div></div>`;
 
   if (!rs.length){
@@ -1239,7 +1241,7 @@ function renderList(){
           ${obj}
         </div>
       </div>
-      <div class="rr"><div class="am ${inc?"pos":""}">${inc ? "+"+inkMask(money(r.amount)) : "−"+inkMask(money(r.amount))}</div></div>
+      <div class="rr"><div class="am ${inc?"pos":""}">${inc ? "+"+inkMask(money(r.amount)) : "−"+inkMask(money(r.amount), false)}</div></div>
       <button class="del edit" data-edit="${r.id}" aria-label="修改"><svg class="ic"><use href="#i-edit"/></svg></button>
       <button class="del" data-del="${r.id}" aria-label="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
     </div>`;
@@ -1454,7 +1456,7 @@ $("#recList").onclick = e => {
   if (del){
     const id = del.dataset.del, r = curAcc().records.find(x => x.id === id); if (!r) return;
     const c = catOf(r.type, r.cat);
-    if (!confirm(`删除「${c.name} ${inkMask(money(r.amount))}」？删除后无法恢复。`)) return;
+    if (!confirm(`删除「${c.name} ${r.type === "income" ? inkMask(money(r.amount)) : money(r.amount)}」？删除后无法恢复。`)) return;
     curAcc().records = curAcc().records.filter(x => x.id !== id);
     save(); renderFiltPills(); renderCmp(); renderTotal(); renderList(); toast("已删除");
     return;
