@@ -1655,6 +1655,7 @@ function openLogin(){
     afterLogin();
     toast("已登录账号 " + ac);
   });
+  $("#loginBody").classList.add("on");
   $("#loginMask").classList.add("on");
 }
 function closeLogin(){ const m = $("#loginMask"); if (m) m.classList.remove("on"); }
