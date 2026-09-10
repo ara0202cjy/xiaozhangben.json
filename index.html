@@ -1703,7 +1703,7 @@ function openCloudGuide(){
     </div>`;
   const msg = t => { $("#guideMsg").textContent = t; };
   const grab = () => setCloud({ token: $("#guideToken").value.trim(), gistId: $("#guideGist").value.trim() });
-  $("#guideX").onclick = () => { $("#guideMask").classList.remove("on"); renderAccountBox(); };
+  $("#guideX").onclick = () => { $("#guideMask").classList.remove("on"); $("#guideBody").classList.remove("on"); renderAccountBox(); };
   $("#guideTest").onclick = async () => {
     grab(); msg("测试中…");
     try{ const r = await gistTest(); msg(`Token 有效（GitHub 用户 ${r.login}）；${r.gist}`); }
@@ -1728,9 +1728,11 @@ function openCloudGuide(){
     if (!t){ msg("请先填 Token"); return; }
     setCloud({ token: t, gistId: $("#guideGist").value.trim(), autoSync: $("#guideAuto").checked });
     $("#guideMask").classList.remove("on");
+    $("#guideBody").classList.remove("on");
     renderAccountBox(); toast("云端配置已保存");
     afterLogin();
   };
+  $("#guideBody").classList.add("on");
   $("#guideMask").classList.add("on");
 }
 
