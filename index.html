@@ -118,6 +118,23 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 .ledgerwrap .objlabel{color:var(--sun-d,#B98B1C)}
 .ledgerchips button.on{background:var(--sun);color:#7a5a00;border-color:var(--sun)}
 
+/* 设置面板：账本 / 账号管理列表 */
+.mgmt-list{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+.mi{display:flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:11px;background:#FFFDF8;overflow:hidden}
+.mi.on{border-color:var(--mint);background:var(--mint-l)}
+.mi-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:0;background:transparent;padding:9px 11px;text-align:left}
+.mi-name{font-size:var(--fs-m);font-weight:800;color:var(--ink2);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.mi-sub{font-size:10px;color:var(--ink3);font-weight:600;line-height:1.2}
+.mi-acts{display:flex;gap:2px;padding-right:6px;flex:none}
+.mi-act{width:30px;height:30px;border-radius:8px;border:1px solid var(--line2);background:#fff;display:grid;place-items:center;color:var(--ink3)}
+.mi-act .ic{width:15px;height:15px}
+.mi-act:active{background:var(--cream2)}
+.mi-act[data-act="del"]:active{background:#FBE6E6;color:#C0392B;border-color:#EBCACA}
+.mi-act[data-act="switch"]:active{background:var(--mint-l);color:var(--mint-d)}
+.weakbtn{width:100%;height:38px;border-radius:10px;border:1px dashed var(--line2);background:transparent;
+  color:var(--mint-d);font-size:var(--fs-m);font-weight:800;display:flex;align-items:center;justify-content:center;gap:5px}
+.weakbtn:active{background:var(--mint-l)}
+
 .row2{display:flex;gap:7px;flex:none;align-items:center}
 .inp{flex:1;min-width:0;height:36px;padding:0 11px;border-radius:10px;border:1px solid var(--line2);
   background:#FFFDF8;font-size:var(--fs-m);font-weight:600}
@@ -331,7 +348,9 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 .rec{cursor:pointer}
 .rec .del.edit{color:var(--mint-d)}
 </style>
+
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
 </head>
 <body>
 
@@ -383,7 +402,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       </div>
       <div class="ledgerwrap">
         <div class="objlabel">当前账本</div>
-        <div class="ledgerchips acctchips"></div>
+        <div class="ledgerchips"></div>
       </div>
 
       <div class="seg">
@@ -425,7 +444,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       </div>
       <div class="ledgerwrap">
         <div class="objlabel">当前账本</div>
-        <div class="ledgerchips acctchips"></div>
+        <div class="ledgerchips"></div>
       </div>
       <div class="range">
         <select id="cmpY"></select>
@@ -448,7 +467,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       </div>
       <div class="ledgerwrap">
         <div class="objlabel">当前账本</div>
-        <div class="ledgerchips acctchips"></div>
+        <div class="ledgerchips"></div>
       </div>
       <div class="range">
         <select id="selY"></select>
@@ -477,7 +496,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       </div>
       <div class="ledgerwrap">
         <div class="objlabel">当前账本</div>
-        <div class="ledgerchips acctchips"></div>
+        <div class="ledgerchips"></div>
       </div>
       <div class="range">
         <select id="selY2"></select>
@@ -528,6 +547,20 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       <div class="h"><svg class="ic"><use href="#i-cloud"/></svg><b>云同步</b>
         <span class="t" id="cloudTag">未登录</span></div>
       <div id="accountBox"></div>
+    </div>
+
+    <div class="card tight">
+      <div class="h"><svg class="ic"><use href="#i-note"/></svg><b>账本管理</b>
+        <span class="t">账号 <span id="mgmtAcName">—</span></span></div>
+      <div id="ledgerMgmt" class="mgmt-list"></div>
+      <button class="weakbtn" id="btnAddLedger2" style="margin-top:8px">＋ 新增账本</button>
+    </div>
+
+    <div class="card tight">
+      <div class="h"><svg class="ic"><use href="#i-gear"/></svg><b>账号管理</b>
+        <span class="t">共 <span id="mgmtAcCount">0</span> 个</span></div>
+      <div id="acctMgmt" class="mgmt-list"></div>
+      <button class="weakbtn" id="btnAddAccount2" style="margin-top:8px">＋ 新增账号</button>
     </div>
 
     <div class="card tight">
@@ -607,9 +640,9 @@ function money(n){
 const money0 = n => (n<0?"-¥":"¥") + Math.round(Math.abs(n)).toLocaleString("zh-CN");
 const esc = s => String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
-/* cjy 主账号收入隐私遮罩：收入/净额等敏感数字默认 *****，点击后查看 */
+/* 收入隐私遮罩：仅当前账本 mask=true 时遮罩（主账本含 cjy 数据） */
 function inkMask(formatted){
-  if (S.cur !== "cjy") return formatted;            // 仅主账号 cjy 遮罩
+  if (!shouldMask()) return formatted;             // 仅主账本遮罩
   return `<span class="ink-mask" data-real="${esc(formatted)}" role="button" tabindex="0" title="点击查看收入">*****</span>`;
 }
 
@@ -636,14 +669,14 @@ const CATS = {
   }
 };
 const catOf = (t, id) => {
-  const list = t === "expense" ? CATS.expense : (CATS.income[S.cur] || CATS.income.cjy);
+  const list = t === "expense" ? CATS.expense : (CATS.income[curProfile()] || CATS.income.cjy);
   return list.find(c => c.id === id) || list[list.length-1];
 };
 const TARGETS = {
   cjy:{ list:["家庭","队友","个人","亲子","其他"], def:"个人" },
   lc: { list:["家庭成员","朋友","自己","其他"],     def:"自己" }
 };
-const targetsOf = k => TARGETS[k] || TARGETS.cjy;
+const targetsOf = k => TARGETS[k] || TARGETS[curProfile()] || TARGETS.cjy;
 /* 校验用：任一账号出现过的对象都算合法，避免切账号后旧记录被改写 */
 const ALL_TARGETS = Array.from(new Set(Object.values(TARGETS).flatMap(t => t.list)));
 
@@ -658,75 +691,127 @@ const store = (function(){
 /* 历史分类 id → 现用分类 id（改分类名后旧记录不会落到"其他"） */
 const CAT_MIGRATE = { snack:"food", home:"other", med:"other" };
 
-/* ---------- 初始数据 ---------- */
-/* 不含任何示例数据：全新安装时各账号均为 0 条记录 */
-function blankLedger(){ return { records: [], quickNotes: [] }; }
-/* 账号结构：当前账本 cur + 本地密码 pass + 云端配置 cloud + 两个账本 ledgers{main,kid} */
-function blankAcc(pass){
-  return { cur: "main", pass: pass || "",
-           cloud: { token: "", gistId: "", autoSync: true, lastSync: 0 },
-           ledgers: { main: blankLedger(), kid: blankLedger() } };
+/* ---------- 初始数据 ----------
+   工作台可存多个账号；每个账号含若干账本（数组，动态增删、可改名）；
+   每个账本独立记录与统计。账本带 profile（收入分类集：cjy / lc）与 mask（收入遮罩）。 */
+function makeLedger(name, profile, mask){
+  return { id: uid(), name: name || "新账本", profile: profile || "cjy", mask: !!mask,
+           records: [], quickNotes: [] };
 }
+function normRecs(records){
+  records = Array.isArray(records) ? records : [];
+  return records.map(r => Object.assign(
+    {id:uid(), date:iso(new Date()), time:"", type:"expense", amount:0, cat:"other", target:"", note:"", demo:false}, r));
+}
+function makeLedgerFrom(name, profile, mask, records, quickNotes){
+  const lg = makeLedger(name, profile, mask);
+  lg.records = normRecs(records);
+  lg.quickNotes = Array.isArray(quickNotes) ? quickNotes.slice() : topNotesFrom(lg.records);
+  return lg;
+}
+/* 账号：当前账本 cur(数组下标) + 本地密码 pass + 云端配置 cloud + 账本数组 ledgers */
+function blankAcc(pass){
+  return { cur: 0, pass: pass || "",
+           cloud: { token:"", gistId:"", autoSync:true, lastSync:0 },
+           ledgers: [ makeLedger("主账本","cjy",false) ] };
+}
+/* 种子：chenjy 账号，密码 000000，含「主账本(cjy)」「亲子账本(lc)」 */
+function seedChenjy(){
+  const a = blankAcc(hashPwd("000000"));
+  a.ledgers[0] = makeLedgerFrom("主账本","cjy",true);
+  a.ledgers.push(makeLedgerFrom("亲子账本","lc",false));
+  return a;
+}
+function profileOf(key){ return key === "lc" ? "lc" : "cjy"; }
+function maskOf(key){ return key === "cjy"; }
 
-
-/* ---------- 多账号（每个账号含「主账本」+「亲子账本」两套独立账本） ---------- */
-const ACCOUNTS = ["cjy","lc","chenjy"];
-const ACC_DISPLAY = { cjy: "主账号", lc: "副账号", chenjy: "陈记" };
-const ACC_ALIASES = (() => {
-  const m = {};
-  const add = (ac, keys) => keys.forEach(k => { m[k.toLowerCase()] = ac; });
-  add("cjy", ["cjy","c","主账号","主","本人","我自己","我","我的","cjy主","主账户","本人主账号","本人账户","主记","工资卡"]);
-  add("lc",  ["lc","l","副账号","副","家人","老婆","孩子","lc副","副账户","家人账户","副记","零钱"]);
-  add("chenjy", ["chenjy","chen","陈记","陈","晨记","cj","cjy2","小陈"]);
-  return m;
-})();
+/* ---------- 账号名解析（导入 / 切换用） ---------- */
 function resolveAccount(raw){
-  raw = (raw || "").trim();
+  raw = (raw||"").trim();
   if (!raw) return null;
   const low = raw.toLowerCase();
-  if (ACCOUNTS.indexOf(low) >= 0) return low;          // 精确内部 id：cjy / lc / chenjy
-  if (low in ACC_ALIASES) return ACC_ALIASES[low];      // 各种可读别名
-  return null;                                          // 无法识别
+  if (S && S.accounts && low in S.accounts) return low;        // 精确匹配账号名
+  const ALIAS = {   // 旧版 / 可读别名 → 现有账号（旧 cjy/lc 均并入 chenjy）
+    "cjy":"chenjy","c":"chenjy","主账号":"chenjy","主":"chenjy","本人":"chenjy","我":"chenjy","我的":"chenjy","主记":"chenjy","工资卡":"chenjy","cjy主":"chenjy",
+    "lc":"chenjy","l":"chenjy","副账号":"chenjy","副":"chenjy","家人":"chenjy","老婆":"chenjy","孩子":"chenjy","副记":"chenjy","零钱":"chenjy",
+    "chenjy":"chenjy","chen":"chenjy","陈记":"chenjy","陈":"chenjy","晨记":"chenjy","cj":"chenjy","cjy2":"chenjy","小陈":"chenjy"
+  };
+  if (low in ALIAS && S && S.accounts && ALIAS[low] in S.accounts) return ALIAS[low];
+  return null;
 }
-/* 当前账本对象（主账本 / 亲子账本） */
-function curAcc(){ return S.accounts[S.cur].ledgers[S.accounts[S.cur].cur]; }
+
+/* 当前账本对象（记录容器） */
 function curAccount(){ return S.accounts[S.cur]; }
-function curLedgerName(){ return S.accounts[S.cur].cur; }
-function setLedger(name){ if (name === "main" || name === "kid") S.accounts[S.cur].cur = name; }
+function curAcc(){ return S.accounts[S.cur].ledgers[S.accounts[S.cur].cur]; }
+function curLedgerName(){ return curAcc().name; }
+function setLedger(idx){ if (idx >= 0 && idx < S.accounts[S.cur].ledgers.length) S.accounts[S.cur].cur = idx; }
+function curProfile(){ return curAcc().profile || "cjy"; }
+function shouldMask(){ return !!curAcc().mask; }
+
 function topNotesFrom(records){
   const cnt = {};
   records.forEach(r => { const n = (r.note||"").trim(); if (n) cnt[n] = (cnt[n]||0) + 1; });
   return Object.keys(cnt).sort((a,b) => cnt[b]-cnt[a]).slice(0, 20);
 }
+
+/* 把任意格式的账号对象规范成新结构（ledgers 必为数组） */
 function normalizeAcc(acc, key){
   if (!acc || typeof acc !== "object") acc = {};
-  /* 兼容旧版：顶层 records 视为「主账本」 */
-  if (acc.records){
-    acc.ledgers = { main: { records: acc.records, quickNotes: acc.quickNotes || [] }, kid: blankLedger() };
-  }
-  if (!acc.ledgers || typeof acc.ledgers !== "object") acc.ledgers = {};
-  if (!acc.ledgers.main) acc.ledgers.main = blankLedger();
-  if (!acc.ledgers.kid)  acc.ledgers.kid  = blankLedger();
-  const defT = targetsOf(key).def;
-  ["main","kid"].forEach(L => {
-    const lg = acc.ledgers[L];
-    if (!Array.isArray(lg.records)) lg.records = [];
-    if (!Array.isArray(lg.quickNotes)) lg.quickNotes = topNotesFrom(lg.records);
-    lg.records = lg.records.map(r => Object.assign(
-      {id:uid(),date:iso(new Date()),time:"",type:"expense",amount:0,cat:"other",target:"",note:"",demo:false}, r));
-    lg.records.forEach(r => {
-      if (r.type === "income") r.target = "";
-      else {
-        if (CAT_MIGRATE[r.cat]) r.cat = CAT_MIGRATE[r.cat];
-        if (!ALL_TARGETS.includes(r.target)) r.target = defT;
-      }
+  let ledgers;
+  if (Array.isArray(acc.ledgers)){
+    ledgers = acc.ledgers.map(lg => {
+      const o = { id: lg.id || uid(), name: lg.name || "账本",
+                  profile: lg.profile || "cjy", mask: !!lg.mask, records: [], quickNotes: [] };
+      o.records = normRecs(lg.records);
+      o.quickNotes = Array.isArray(lg.quickNotes) ? lg.quickNotes : topNotesFrom(o.records);
+      return o;
     });
-  });
-  if (acc.cur !== "main" && acc.cur !== "kid") acc.cur = "main";
+    if (!ledgers.length) ledgers = [ makeLedger("主账本","cjy",false) ];
+  } else if (acc.ledgers && typeof acc.ledgers === "object"){
+    const m = acc.ledgers.main || {}; const k = acc.ledgers.kid || {};
+    ledgers = [ makeLedgerFrom("主账本", profileOf(key), maskOf(key), m.records, m.quickNotes) ];
+    const kRecs = (k.records && k.records.length) ? k.records : null;
+    ledgers.push(kRecs ? makeLedgerFrom("亲子账本", profileOf(key), false, kRecs, k.quickNotes)
+                       : makeLedger("亲子账本", profileOf(key), false));
+  } else if (acc.records){
+    ledgers = [ makeLedgerFrom("主账本", profileOf(key), maskOf(key), acc.records, acc.quickNotes) ];
+  } else {
+    ledgers = [ makeLedger("主账本","cjy",false) ];
+  }
+  ledgers.forEach(lg => lg.records.forEach(r => {
+    if (r.type === "income") r.target = "";
+    else { if (CAT_MIGRATE[r.cat]) r.cat = CAT_MIGRATE[r.cat]; if (!ALL_TARGETS.includes(r.target)) r.target = targetsOf(lg.profile).def; }
+  }));
+  const cur = (typeof acc.cur === "number" && acc.cur >= 0 && acc.cur < ledgers.length) ? acc.cur : 0;
   if (typeof acc.pass !== "string") acc.pass = "";
+  acc.ledgers = ledgers; acc.cur = cur;
   acc.cloud = Object.assign({ token:"", gistId:"", autoSync:true, lastSync:0 }, acc.cloud || {});
   return acc;
 }
+
+/* 旧「三账号各自含主/亲子账本」格式 → 单一 chenjy 账号（主账本=旧cjy，亲子账本=旧lc） */
+function migrateOldToChenjy(data){
+  const chen = blankAcc(hashPwd("000000"));
+  const pull = (ac, slot) => {
+    const a = data.accounts[ac] || {};
+    if (slot === "main" && a.records) return a.records;
+    const lg = a.ledgers || {};
+    return (lg[slot] && lg[slot].records) || [];
+  };
+  chen.ledgers[0] = makeLedgerFrom("主账本","cjy",true,
+    normRecs(pull("cjy","main")).concat(normRecs(pull("cjy","kid"))));
+  chen.ledgers[1] = makeLedgerFrom("亲子账本","lc",false,
+    normRecs(pull("lc","main")).concat(normRecs(pull("lc","kid"))));
+  const ex = normRecs(pull("chenjy","main")).concat(normRecs(pull("chenjy","kid")));
+  if (ex.length) chen.ledgers[0].records = chen.ledgers[0].records.concat(ex);
+  const ca = data.accounts.chenjy || {};
+  if (typeof ca.pass === "string" && ca.pass) chen.pass = ca.pass;
+  const mergeCloud = src => { if (src && src.cloud && src.cloud.token && !chen.cloud.token) chen.cloud = Object.assign(chen.cloud, src.cloud); };
+  mergeCloud(ca); mergeCloud(data.accounts.cjy); mergeCloud(data.accounts.lc);
+  chen.cur = 0;
+  return { cur: "chenjy", accounts: { chenjy: chen } };
+}
+
 let S = null;
 function save(){
   if (store.ok){ store.set(KEY, JSON.stringify(S)); scheduleCloudPush(); return; }
@@ -737,25 +822,27 @@ function load(){
   if (raw){ try{ data = JSON.parse(raw); }catch(e){ data = null; } }
   let out;
   if (data && data.accounts && typeof data.accounts === "object"){
-    out = { cur: ACCOUNTS.includes(data.cur) ? data.cur : "cjy", accounts: {} };
-    ACCOUNTS.forEach(a => { out.accounts[a] = normalizeAcc(data.accounts[a], a); });
-  } else if (data && Array.isArray(data.records)){   // 旧单账号数据 → 并入 cjy
-    out = { cur:"cjy", accounts: { cjy: normalizeAcc(data, "cjy") } };
-    ACCOUNTS.forEach(a => { if (!out.accounts[a]) out.accounts[a] = blankAcc(); });
+    const keys = Object.keys(data.accounts);
+    const isNew = keys.some(k => Array.isArray(data.accounts[k].ledgers));
+    if (isNew){
+      out = { cur: (data.cur && data.accounts[data.cur]) ? data.cur : keys[0], accounts: {} };
+      keys.forEach(k => out.accounts[k] = normalizeAcc(data.accounts[k], k));
+    } else {
+      out = migrateOldToChenjy(data);   // 旧三账号格式 → 单一 chenjy 账号
+    }
+  } else if (data && Array.isArray(data.records)){   // 最早单账号数据 → chenjy 主账本
+    const chen = blankAcc(hashPwd("000000"));
+    chen.ledgers[0] = makeLedgerFrom("主账本","cjy",true, data.records, data.quickNotes);
+    out = { cur:"chenjy", accounts:{ chenjy: chen } };
   } else {
-    out = { cur:"cjy", accounts: {} };
-    ACCOUNTS.forEach(a => { out.accounts[a] = blankAcc(); });
+    out = { cur:"chenjy", accounts:{ chenjy: seedChenjy() } };
   }
-  /* 各账号旧数据已通过 normalizeAcc 并入各自「主账本」，无需额外迁移（cjy→cjy.main，lc→lc.main） */
-  /* 默认给 chenjy 账号上密码锁（000000），cjy / lc 无密码 */
-  if (!out.accounts.chenjy.pass) out.accounts.chenjy.pass = hashPwd("000000");
-  /* 清理历史示例数据（demo 标记）：保证导出从 0 条真实记录开始 */
-  ACCOUNTS.forEach(a => {
-    const acc = out.accounts[a];
-    ["main","kid"].forEach(L => {
-      if (acc.ledgers[L].records.some(r => r.demo)){
-        acc.ledgers[L].records = acc.ledgers[L].records.filter(r => !r.demo);
-        acc.ledgers[L].quickNotes = topNotesFrom(acc.ledgers[L].records);
+  /* 清理历史示例数据（demo 标记） */
+  Object.keys(out.accounts).forEach(ac => {
+    out.accounts[ac].ledgers.forEach(lg => {
+      if (lg.records.some(r => r.demo)){
+        lg.records = lg.records.filter(r => !r.demo);
+        lg.quickNotes = topNotesFrom(lg.records);
         out._cleaned = true;
       }
     });
@@ -844,7 +931,7 @@ function showSaved(rec){
   el.className = "toast act";
   el.innerHTML = `<svg class="ic"><use href="#i-check"/></svg><span class="tx"></span><button class="undo" type="button">撤销</button>`;
   el.querySelector(".tx").textContent =
-    `已保存：${rec.type === "income" ? "收入" : "支出"} · ${c.name}${who} · ${(rec.type==="income" && S.cur==="cjy") ? "*****" : money(rec.amount)} · ${dt}`;
+    `已保存：${rec.type === "income" ? "收入" : "支出"} · ${c.name}${who} · ${(rec.type==="income" && shouldMask()) ? "*****" : money(rec.amount)} · ${dt}`;
   el.querySelector(".undo").onclick = () => {
     curAcc().records = curAcc().records.filter(x => x.id !== rec.id);
     save();
@@ -877,31 +964,61 @@ function go(t){
 let aType = "expense", aCat = "food", aTarget = "个人";
 
 function renderCats(){
-  const list = aType === "expense" ? CATS.expense : (CATS.income[S.cur] || CATS.income.cjy);
+  const list = aType === "expense" ? CATS.expense : (CATS.income[curProfile()] || CATS.income.cjy);
   if (!list.some(c => c.id === aCat)) aCat = list[0].id;
   $("#catGrid").innerHTML = list.map(c =>
     `<button data-c="${c.id}" class="${c.id===aCat?"on":""}"><svg class="ic"><use href="#${c.ic}"/></svg><span>${c.name}</span></button>`
   ).join("");
 }
 function renderTargets(){
-  const ts = targetsOf(S.cur);
+  const ts = targetsOf(curProfile());
   if (ts.list.indexOf(aTarget) < 0) aTarget = ts.def;   // 切账号后回落到该账号默认
   $("#objChips").innerHTML = ts.list.map(t =>
     `<button data-t="${t}" class="${t===aTarget?"on":""}">${t}</button>`).join("");
 }
 function showObj(){ $("#objWrap").style.display = aType === "expense" ? "" : "none"; }
 function renderAcctChips(){
-  const html = ACCOUNTS.map(a =>
-    `<button data-ac="${a}" class="${a===S.cur?"on":""}">${ACC_DISPLAY[a]||a}${S.accounts[a].pass?" 🔒":""}</button>`).join("");
+  const keys = Object.keys(S.accounts);
+  const html = keys.map(ac =>
+    `<button data-ac="${esc(ac)}" class="${ac===S.cur?"on":""}">${esc(ac)}${S.accounts[ac].pass?" 🔒":""}</button>`).join("")
+    + `<button data-ac="add" class="add">＋账号</button>`;
   $$(".acctchips").forEach(el => el.innerHTML = html);
 }
 function renderLedgerChips(){
-  const cur = curLedgerName();
-  const html = [
-    `<button data-led="main" class="${cur==="main"?"on":""}">主账本</button>`,
-    `<button data-led="kid" class="${cur==="kid"?"on":""}">亲子账本</button>`
-  ].join("");
+  const ac = curAccount();
+  const cur = ac.cur;
+  const html = ac.ledgers.map((lg,i) =>
+    `<button data-led="${i}" class="${i===cur?"on":""}">${esc(lg.name)}</button>`).join("")
+    + `<button data-led="add" class="add">＋账本</button>`;
   $$(".ledgerchips").forEach(el => el.innerHTML = html);
+}
+function addLedger(){
+  const name = (prompt("新账本名称：", "新账本") || "").trim();
+  if (!name) return;
+  const ac = curAccount();
+  ac.ledgers.push(makeLedger(name, curProfile(), false));
+  setLedger(ac.ledgers.length - 1);
+  save();
+  renderLedgerChips(); renderLedgerMgmt(); renderAccountBox();
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills();
+  renderTotal(); renderList(); renderCmp();
+  toast("已新增账本「" + name + "」");
+}
+function addAccount(){
+  const name = (prompt("新账号名称：", "新账号") || "").trim();
+  if (!name){ return; }
+  if (S.accounts[name]){ toast("账号「" + name + "」已存在", "err"); return; }
+  const p = prompt("为该账号设置密码（留空=不加密，直接回车）：");
+  if (p === null) return;
+  S.accounts[name] = blankAcc(p ? hashPwd(p) : "");
+  S.cur = name; save();
+  renderAcctChips(); renderLedgerChips(); renderAcctMgmt();
+  renderCats(); renderTargets();
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills();
+  renderTotal(); renderList(); renderCmp(); renderAccountBox();
+  toast("已新增账号「" + name + "」");
 }
 
 function topNotes(){ return topNotesFrom(curAcc().records); }
@@ -969,7 +1086,7 @@ function saveRecord(){
 function cmpLine(val, maxV, color, inc){
   const pct = maxV > 0 ? Math.max(2, val/maxV*100) : 0;
   const txt = (inc?"+":"−") + money0(val);
-  const shown = (inc && S.cur==="cjy")
+  const shown = (inc && shouldMask())
     ? `<span class="ink-mask" data-real="${esc(txt)}" role="button" tabindex="0" title="点击查看收入">*****</span>`
     : txt;
   return `<div class="cmp-line">
@@ -1095,7 +1212,7 @@ function renderList(){
         </div>
       </div>
       <div class="rr"><div class="am ${inc?"pos":""}">${inc
-        ? (S.cur==="cjy"
+        ? (shouldMask()
             ? `<span class="ink-mask" data-real="${esc("+"+money(r.amount))}" role="button" tabindex="0" title="点击查看收入">+*****</span>`
             : "+"+money(r.amount))
         : "−"+money(r.amount)}</div></div>
@@ -1114,7 +1231,7 @@ function openEdit(id){
   if (!r) return;
   editing = {
     id: r.id, type: r.type, cat: r.cat,
-    target: r.target || targetsOf(S.cur).def
+    target: r.target || targetsOf(curProfile()).def
   };
   $("#eAmt").value  = r.amount;
   $("#eNote").value = r.note || "";
@@ -1137,13 +1254,13 @@ function renderEditForm(){
   $("#eIncome").classList.toggle("on", !isExp);
   $("#eObjWrap").style.display = isExp ? "" : "none";
 
-  const list = isExp ? CATS.expense : (CATS.income[S.cur] || CATS.income.cjy);
+  const list = isExp ? CATS.expense : (CATS.income[curProfile()] || CATS.income.cjy);
   if (!list.some(c => c.id === editing.cat)) editing.cat = list[0].id;
   $("#eCatGrid").innerHTML = list.map(c =>
     `<button data-c="${c.id}" class="${c.id===editing.cat?"on":""}"><svg class="ic"><use href="#${c.ic}"/></svg><span>${c.name}</span></button>`
   ).join("");
 
-  const ts = targetsOf(S.cur);
+  const ts = targetsOf(curProfile());
   if (ts.list.indexOf(editing.target) < 0) editing.target = ts.def;
   $("#eObjChips").innerHTML = ts.list.map(t =>
     `<button data-t="${t}" class="${t===editing.target?"on":""}">${t}</button>`).join("");
@@ -1240,16 +1357,18 @@ $("#objChips").onclick = e => {
 const _unlocked = {};   // 会话内已解锁的密码账号，避免反复输密码
 $$(".acctchips").forEach(el => el.onclick = e => {
   const b = e.target.closest("[data-ac]"); if (!b) return;
-  const ac = b.dataset.ac; if (ac === S.cur) return;
+  const ac = b.dataset.ac;
+  if (ac === "add"){ addAccount(); return; }
+  if (ac === S.cur) return;
   const hp = S.accounts[ac].pass;
   if (hp && !_unlocked[ac]){
-    const p = prompt("「" + (ACC_DISPLAY[ac]||ac) + "」需要密码才能打开：");
+    const p = prompt("「" + ac + "」需要密码才能打开：");
     if (p === null) return;                       // 取消
     if (hashPwd(p) !== hp){ toast("密码错误", "err"); return; }
     _unlocked[ac] = true;
   }
   S.cur = ac; save();
-  renderAcctChips(); renderLedgerChips();
+  renderAcctChips(); renderLedgerChips(); renderAcctMgmt();
   renderCats();                                  // 收入分类随账号切换
   renderTargets();                               // 支出对象随账号切换
   initRange(); buildPointRange(); syncPointRange();
@@ -1259,13 +1378,15 @@ $$(".acctchips").forEach(el => el.onclick = e => {
 });
 $$(".ledgerchips").forEach(el => el.onclick = e => {
   const b = e.target.closest("[data-led]"); if (!b) return;
-  const L = b.dataset.led; if (L === curLedgerName()) return;
-  setLedger(L); save();
-  renderLedgerChips();
+  const v = b.dataset.led;
+  if (v === "add"){ addLedger(); return; }
+  const i = parseInt(v, 10); if (i === S.accounts[S.cur].cur) return;
+  setLedger(i); save();
+  renderLedgerChips(); renderLedgerMgmt();
   initRange(); buildPointRange(); syncPointRange();
   renderQuickNotes(); renderFiltPills();
   renderTotal(); renderList(); renderCmp();
-  toast(L === "kid" ? "已切到亲子账本" : "已切到主账本");
+  toast("已切到「" + curLedgerName() + "」");
 });
 $("#quickNotes").onclick = e => {
   const addBtn = e.target.closest("[data-add]");
@@ -1497,13 +1618,16 @@ function injectLogin(){
 /* 账号登陆（云端同步）：选账号即同步该账号各自独立的云端数据；带 🔒 的账号需密码 */
 function openLogin(){
   injectLogin();
-  const rows = ACCOUNTS.map(ac => {
+  const keys = Object.keys(S.accounts);
+  const rows = keys.map(ac => {
     const a = S.accounts[ac];
     const locked = !!a.pass;
-    return `<div class="crow acc-pick" data-ac="${ac}" style="cursor:pointer">
-      <span class="lb">${esc(ACC_DISPLAY[ac]||ac)}${locked?" 🔒":""}</span>
+    return `<div class="crow acc-pick" data-ac="${esc(ac)}" style="cursor:pointer">
+      <span class="lb">${esc(ac)}${locked?" 🔒":""}</span>
       <span class="vl">${ac===S.cur?"当前 ✓":"切换 ›"}</span></div>`;
-  }).join("");
+  }).join("")
+    + `<div class="crow acc-pick" data-ac="add" style="cursor:pointer">
+        <span class="lb">＋ 新增账号</span><span class="vl">›</span></div>`;
   $("#loginBody").innerHTML = `
     <div class="sh-head"><b>账号登陆（云端同步）</b><button class="cx" id="loginX" aria-label="关闭">×</button></div>
     <div style="padding:0 2px 4px">
@@ -1514,16 +1638,17 @@ function openLogin(){
   $("#loginX").onclick = () => closeLogin();
   $$("#loginBody .acc-pick").forEach(el => el.onclick = () => {
     const ac = el.dataset.ac;
+    if (ac === "add"){ closeLogin(); addAccount(); return; }
     const hp = S.accounts[ac].pass;
     if (hp && !_unlocked[ac]){
-      const p = prompt("「" + (ACC_DISPLAY[ac]||ac) + "」需要密码：");
+      const p = prompt("「" + ac + "」需要密码：");
       if (p === null) return;
       if (hashPwd(p) !== hp){ toast("密码错误", "err"); return; }
       _unlocked[ac] = true;
     }
     S.cur = ac; save();
     closeLogin();
-    renderAcctChips(); renderLedgerChips();
+    renderAcctChips(); renderLedgerChips(); renderAcctMgmt();
     renderCats(); renderTargets();
     initRange(); buildPointRange(); syncPointRange();
     renderQuickNotes(); renderFiltPills();
@@ -1612,14 +1737,14 @@ function renderAccountBox(){
   const box = $("#accountBox"); if (!box) return;
   const ac = S.cur, a = S.accounts[ac], c = getCloud();
   const tag = $("#cloudTag");
-  if (tag) tag.textContent = (ACC_DISPLAY[ac]||ac) + (a.pass ? " 🔒" : "");
+  if (tag) tag.textContent = ac + (a.pass ? " 🔒" : "");
   let syncTxt = "未配置 ›";
   if (c.token && c.gistId) syncTxt = (c.autoSync ? "已开启 · 自动备份" : "已配置 · 手动") + "（上次 " + fmtTime(c.lastSync) + "）›";
   else if (c.token) syncTxt = "缺 Gist，点此创建 ›";
   box.innerHTML = `
     <div class="crow" id="accLoginRow"><span class="lb">☁ 账号登陆（云端同步）</span><span class="vl">切换账号 / 密码 ›</span></div>
-    <div class="crow"><span class="lb">当前账号</span><span class="vl">${esc(ACC_DISPLAY[ac]||ac)}${a.pass?" 🔒":""}</span></div>
-    <div class="crow"><span class="lb">当前账本</span><span class="vl">${S.accounts[ac].cur === "kid" ? "亲子账本" : "主账本"}</span></div>
+    <div class="crow"><span class="lb">当前账号</span><span class="vl">${esc(ac)}${a.pass?" 🔒":""}</span></div>
+    <div class="crow"><span class="lb">当前账本</span><span class="vl">${esc(curLedgerName())}</span></div>
     <div class="crow"><span class="lb">云端位置</span><span class="vl">${c.gistId ? esc(c.gistId) : "未创建"}</span></div>
     <div class="crow" id="accSyncRow"><span class="lb">立即同步</span><span class="vl">${esc(syncTxt)}</span></div>
     <div class="crow" id="accPushRow"><span class="lb">上传到云端</span><span class="vl">本机 → Gist ›</span></div>
@@ -1643,6 +1768,163 @@ function renderAccountBox(){
   $("#accCfgRow").onclick = () => openCloudGuide();
 }
 
+/* ---------- 账本管理 / 账号管理（设置面板） ---------- */
+function switchAccount(ac){
+  if (!S.accounts[ac]) return false;
+  if (ac === S.cur) return false;
+  const hp = S.accounts[ac].pass;
+  if (hp && !_unlocked[ac]){
+    const p = prompt("「" + ac + "」需要密码才能打开：");
+    if (p === null) return false;
+    if (hashPwd(p) !== hp){ toast("密码错误", "err"); return false; }
+    _unlocked[ac] = true;
+  }
+  S.cur = ac; save();
+  renderAcctChips(); renderLedgerChips(); renderAcctMgmt(); renderLedgerMgmt(); renderAccountBox();
+  renderCats(); renderTargets(); showObj();
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills();
+  renderTotal(); renderList(); renderCmp();
+  toast("已切换到账号 " + ac + "，数据独立");
+  return true;
+}
+function renderLedgerMgmt(){
+  const wrap = $("#ledgerMgmt"); if (!wrap) return;
+  const ac = curAccount();
+  const nm = $("#mgmtAcName"); if (nm) nm.textContent = S.cur;
+  wrap.innerHTML = ac.ledgers.map((lg,i) => {
+    const cnt = lg.records.length;
+    return `<div class="mi ${i===ac.cur?"on":""}">
+      <button class="mi-main" data-led="${i}">
+        <span class="mi-name">${esc(lg.name)}</span>
+        <span class="mi-sub">${lg.profile==="lc"?"亲子":"主"} · ${cnt} 笔${lg.mask?" · 收入隐藏":""}</span>
+      </button>
+      <span class="mi-acts">
+        <button class="mi-act" data-act="rename" data-led="${i}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>
+        <button class="mi-act" data-act="del" data-led="${i}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
+      </span>
+    </div>`;
+  }).join("");
+  wrap.querySelectorAll(".mi-main").forEach(b => b.onclick = () => {
+    const i = parseInt(b.dataset.led,10);
+    if (i === ac.cur) return;
+    setLedger(i); save();
+    renderLedgerChips(); renderLedgerMgmt(); renderAccountBox();
+    renderCats(); renderTargets(); showObj();
+    initRange(); buildPointRange(); syncPointRange();
+    renderQuickNotes(); renderFiltPills(); renderTotal(); renderList(); renderCmp();
+    toast("已切到「" + curLedgerName() + "」");
+  });
+  wrap.querySelectorAll(".mi-act").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const i = parseInt(b.dataset.led,10);
+    if (b.dataset.act === "rename") renameLedger(i);
+    else delLedger(i);
+  });
+}
+function renameLedger(i){
+  const ac = curAccount();
+  const lg = ac.ledgers[i]; if (!lg) return;
+  const name = (prompt("账本名称：", lg.name) || "").trim();
+  if (!name) return;
+  lg.name = name; save();
+  renderLedgerMgmt(); renderLedgerChips(); renderAccountBox();
+  toast("账本已重命名为「" + name + "」");
+}
+function delLedger(i){
+  const ac = curAccount();
+  if (ac.ledgers.length <= 1){ toast("每个账号至少保留 1 个账本", "err"); return; }
+  const lg = ac.ledgers[i]; if (!lg) return;
+  if (!confirm(`删除账本「${lg.name}」？\n该账本的全部 ${lg.records.length} 笔记录将一并删除，且无法恢复！`)) return;
+  ac.ledgers.splice(i,1);
+  if (ac.cur >= ac.ledgers.length) ac.cur = ac.ledgers.length - 1;
+  save();
+  renderLedgerMgmt(); renderLedgerChips(); renderAccountBox();
+  renderCats(); renderTargets(); showObj();
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills(); renderTotal(); renderList(); renderCmp();
+  toast("已删除账本「" + lg.name + "」");
+}
+function renderAcctMgmt(){
+  const wrap = $("#acctMgmt"); if (!wrap) return;
+  const cnt = $("#mgmtAcCount"); if (cnt) cnt.textContent = Object.keys(S.accounts).length;
+  wrap.innerHTML = Object.keys(S.accounts).map(ac => {
+    const a = S.accounts[ac];
+    const total = a.ledgers.reduce((s,lg)=>s+lg.records.length, 0);
+    return `<div class="mi ${ac===S.cur?"on":""}">
+      <button class="mi-main" data-ac="${esc(ac)}">
+        <span class="mi-name">${esc(ac)}${a.pass?" 🔒":""}</span>
+        <span class="mi-sub">${a.ledgers.length} 个账本 · ${total} 笔</span>
+      </button>
+      <span class="mi-acts">
+        <button class="mi-act" data-act="switch" data-ac="${esc(ac)}" title="切换"><svg class="ic"><use href="#i-check"/></svg></button>
+        <button class="mi-act" data-act="rename" data-ac="${esc(ac)}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>
+        <button class="mi-act" data-act="pass" data-ac="${esc(ac)}" title="改密码"><svg class="ic"><use href="#i-gear"/></svg></button>
+        <button class="mi-act" data-act="del" data-ac="${esc(ac)}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
+      </span>
+    </div>`;
+  }).join("");
+  wrap.querySelectorAll(".mi-main").forEach(b => b.onclick = () => switchAccount(b.dataset.ac));
+  wrap.querySelectorAll(".mi-act").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const ac = b.dataset.ac, act = b.dataset.act;
+    if (act === "switch") switchAccount(ac);
+    else if (act === "rename") renameAccount(ac);
+    else if (act === "pass") changeAccountPass(ac);
+    else delAccount(ac);
+  });
+}
+function renameAccount(oldAc){
+  const a = S.accounts[oldAc]; if (!a) return;
+  const name = (prompt("账号新名称：", oldAc) || "").trim();
+  if (!name || name === oldAc) return;
+  if (S.accounts[name]){ toast("账号「" + name + "」已存在", "err"); return; }
+  S.accounts[name] = a;
+  delete S.accounts[oldAc];
+  if (S.cur === oldAc) S.cur = name;
+  if (_unlocked[oldAc]){ _unlocked[name] = true; delete _unlocked[oldAc]; }
+  save();
+  renderAcctChips(); renderAcctMgmt(); renderLedgerMgmt(); renderAccountBox();
+  renderCats(); renderTargets();
+  toast("账号已重命名为「" + name + "」");
+}
+function changeAccountPass(ac){
+  const a = S.accounts[ac]; if (!a) return;
+  if (a.pass){
+    const old = prompt("输入当前密码：");
+    if (old === null) return;
+    if (hashPwd(old) !== a.pass){ toast("当前密码错误", "err"); return; }
+  }
+  const np = prompt("设置新密码（留空=取消加密）：");
+  if (np === null) return;
+  const v = np.trim();
+  a.pass = v ? hashPwd(v) : "";
+  if (a.pass) _unlocked[ac] = true; else delete _unlocked[ac];
+  save();
+  renderAcctMgmt(); renderAcctChips(); renderAccountBox();
+  toast(a.pass ? "已设置密码保护 🔒" : "已取消密码保护");
+}
+function delAccount(ac){
+  if (Object.keys(S.accounts).length <= 1){ toast("至少保留 1 个账号", "err"); return; }
+  const a = S.accounts[ac]; if (!a) return;
+  const total = a.ledgers.reduce((s,lg)=>s+lg.records.length, 0);
+  if (!confirm(`删除账号「${ac}」？\n该账号全部 ${total} 笔记录将一并删除，且无法恢复！`)) return;
+  delete S.accounts[ac];
+  if (_unlocked[ac]) delete _unlocked[ac];
+  if (S.cur === ac) S.cur = Object.keys(S.accounts)[0];
+  save();
+  renderAcctChips(); renderAcctMgmt(); renderLedgerMgmt(); renderAccountBox();
+  renderCats(); renderTargets(); showObj();
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills();
+  renderTotal(); renderList(); renderCmp();
+  toast("已删除账号「" + ac + "」");
+}
+
+/* 设置面板里的「新增账本 / 新增账号」按钮 */
+$("#btnAddLedger2").onclick = () => addLedger();
+$("#btnAddAccount2").onclick = () => addAccount();
+
 /* 启动：若当前账号已配置云端，静默拉取一次（不弹任何登录框） */
 function cloudBoot(){
   const c = getCloud();
@@ -1656,6 +1938,7 @@ function cloudBoot(){
 /* ---- 设置面板 ---- */
 function openSettings(){
   renderAccountBox();
+  renderLedgerMgmt(); renderAcctMgmt();
   $("#setSheet").classList.add("on");
   $("#setMask").classList.add("on");
 }
@@ -1679,15 +1962,17 @@ $("#fileInput2").onchange = e => {
 
 /* 清空数据：当前账号 / 全部账号 */
 function clearAccount(ac){
-  S.accounts[ac].ledgers = { main: blankLedger(), kid: blankLedger() };
+  const a = S.accounts[ac];
+  a.ledgers = [ makeLedger("主账本", a.ledgers[0] ? a.ledgers[0].profile : "cjy", a.ledgers[0] ? a.ledgers[0].mask : false) ];
+  a.cur = 0;
   save();
 }
 function clearCurrentAccount(){
   if (!confirm(`确定清空当前账号「${S.cur}」吗？\n该账号的全部收支记录与快捷备注将被删除，且无法恢复！`)) return;
   clearAccount(S.cur);
-  aType = "expense"; aCat = "food"; aTarget = targetsOf(S.cur).def;
+  aType = "expense"; aCat = "food"; aTarget = targetsOf(curProfile()).def;
   renderCats(); renderTargets(); showObj();
-  renderAcctChips();
+  renderAcctChips(); renderLedgerChips(); renderLedgerMgmt();
   initRange(); buildPointRange(); syncPointRange();
   renderQuickNotes(); renderFiltPills();
   renderTotal(); renderList(); renderCmp();
@@ -1696,11 +1981,11 @@ function clearCurrentAccount(){
 }
 function clearAllAccounts(){
   if (!confirm("⚠️ 确定清空【全部账号】数据吗？\n所有账号的全部收支记录与快捷备注将被永久删除，且无法恢复！")) return;
-  ACCOUNTS.forEach(clearAccount);
-  S.cur = "cjy";
-  aType = "expense"; aCat = "food"; aTarget = "个人";
+  Object.keys(S.accounts).forEach(clearAccount);
+  S.cur = Object.keys(S.accounts)[0];
+  aType = "expense"; aCat = "food"; aTarget = targetsOf(curProfile()).def;
   save();
-  renderAcctChips();
+  renderAcctChips(); renderLedgerChips(); renderAcctMgmt(); renderLedgerMgmt();
   renderCats(); renderTargets(); showObj();
   initRange(); buildPointRange(); syncPointRange();
   renderQuickNotes(); renderFiltPills();
@@ -1958,14 +2243,14 @@ function normTime(s){
 //XLSX-END
 
 /* ---------- 导出 / 导入 业务层 ---------- */
-function catNameFor(ac, r){
-  const list = r.type === "expense" ? CATS.expense : (CATS.income[ac] || CATS.income.cjy);
+function catNameForProfile(profile, r){
+  const list = r.type === "expense" ? CATS.expense : (CATS.income[profile] || CATS.income.cjy);
   const c = list.find(x => x.id === r.cat) || list[list.length-1];
   return c.name;
 }
-function resolveCatId(type, ac, raw){
+function resolveCatId(type, profile, raw){
   raw = (raw||"").trim();
-  const list = type === "expense" ? CATS.expense : (CATS.income[ac] || CATS.income.cjy);
+  const list = type === "expense" ? CATS.expense : (CATS.income[profile] || CATS.income.cjy);
   let c = list.find(x => x.id === raw) || list.find(x => x.name === raw);
   return c ? c.id : "other";
 }
@@ -1984,16 +2269,16 @@ function matchHeader(h){
 }
 function exportXlsx(){
   const rows = [["账号","账本","日期","时间","类型","分类","支出对象","金额","备注"]];
-  ACCOUNTS.forEach(ac => {
-    ["main","kid"].forEach(L => {
-      S.accounts[ac].ledgers[L].records.forEach(r => {
+  Object.keys(S.accounts).forEach(ac => {
+    S.accounts[ac].ledgers.forEach(lg => {
+      lg.records.forEach(r => {
         rows.push([
-          ACC_DISPLAY[ac] || ac,
-          L === "kid" ? "亲子" : "主",
+          ac,
+          lg.name,
           r.date,
           r.time || "",
           r.type === "income" ? "收入" : "支出",
-          catNameFor(ac, r),
+          catNameForProfile(lg.profile, r),
           r.type === "income" ? "" : (r.target || ""),
           r.amount,
           r.note || ""
@@ -2028,6 +2313,12 @@ async function importXlsxFile(file){
   }
   applyImport(matrix, file.name);
 }
+function ensureLedger(ac, name){
+  const a = S.accounts[ac];
+  let lg = a.ledgers.find(l => l.name === name);
+  if (!lg){ lg = makeLedger(name, /亲子|kid|子/.test(name) ? "lc" : "cjy", false); a.ledgers.push(lg); }
+  return a.ledgers.indexOf(lg);
+}
 function applyImport(matrix, fileName){
   if (!matrix || matrix.length < 2){ toast("文件中没有可导入的数据","err"); return; }
   const header = matrix[0].map(h => (h||"").trim());
@@ -2047,22 +2338,23 @@ function applyImport(matrix, fileName){
     const acRaw = (iAc >= 0 ? row[iAc] : "") || "";
     let ac = resolveAccount(acRaw);
     if (!ac){ if (acRaw) unkAc++; ac = S.cur; }   // 未识别的账号值 → 归入当前账号
-    let led = "main";
-    if (iLed >= 0){ const lv = (row[iLed] || "").trim(); if (/亲子|kid|子/.test(lv)) led = "kid"; }
     if (!S.accounts[ac]) S.accounts[ac] = blankAcc();
-    if (!S.accounts[ac].ledgers[led]) S.accounts[ac].ledgers[led] = blankLedger();
+    let ledName = "主账本";
+    if (iLed >= 0){ const lv = (row[iLed] || "").trim(); if (lv) ledName = /亲子|kid|子/.test(lv) ? "亲子账本" : lv; }
+    const ledIdx = ensureLedger(ac, ledName);
+    const profile = S.accounts[ac].ledgers[ledIdx].profile;
     const typeRaw = (iType >= 0 ? row[iType] : "") || "支出";
     const type = /收入|收\s*入|in|income/.test(typeRaw.toLowerCase()) ? "income" : "expense";
     const amtRaw = (iAmt >= 0 ? row[iAmt] : "") || "";
     const amount = parseFloat(String(amtRaw).replace(/[¥￥,\s]/g, ""));
     if (!isFinite(amount) || !(amount > 0)){ skip++; continue; }
-    const cat = resolveCatId(type, ac, iCat >= 0 ? row[iCat] : "");
+    const cat = resolveCatId(type, profile, iCat >= 0 ? row[iCat] : "");
     let target = (iObj >= 0 ? row[iObj] : "") || "";
-    if (type === "expense"){ if (!ALL_TARGETS.includes(target)) target = targetsOf(ac).def; }
+    if (type === "expense"){ if (!ALL_TARGETS.includes(target)) target = targetsOf(profile).def; }
     else target = "";
     const time = normTime(iTime >= 0 ? row[iTime] : "");
     const note = ((iNote >= 0 ? row[iNote] : "") || "").slice(0, 24);
-    newRecs.push({ id: uid(), ac, led, date, time, type, amount: Math.round(amount*100)/100,
+    newRecs.push({ id: uid(), ac, ledName, date, time, type, amount: Math.round(amount*100)/100,
                    cat, target, note, demo: false });
     if (type === "income") incCount++; else expCount++;
   }
@@ -2071,18 +2363,18 @@ function applyImport(matrix, fileName){
   let warn = "";
   if (noAcCol) warn = `（未检测到账号列，全部 ${newRecs.length} 条将导入当前账号「${S.cur}」）`;
   else if (unkAc) warn = `（其中 ${unkAc} 条账号无法识别，已归入当前账号「${S.cur}」）`;
-  const msg = `将导入 ${newRecs.length} 条（收入 ${incCount} / 支出 ${expCount}）${skip ? `，跳过 ${skip} 条无效` : ""}。\n这些记录会按账号分别并入对应账号${warn}，是否继续？`;
+  const msg = `将导入 ${newRecs.length} 条（收入 ${incCount} / 支出 ${expCount}）${skip ? `，跳过 ${skip} 条无效` : ""}。\n这些记录会按账号 / 账本分别并入对应位置${warn}，是否继续？`;
   if (!confirm(msg)) return;
-  const byKey = {};   // ac + "|" + led
+  const byKey = {};   // ac + "|" + ledName
   newRecs.forEach(rec => {
-    const k = rec.ac + "|" + rec.led;
+    const k = rec.ac + "|" + rec.ledName;
     (byKey[k] = byKey[k] || []).push(rec);
   });
   Object.keys(byKey).forEach(k => {
-    const [ac, led] = k.split("|");
+    const [ac, ledName] = k.split("|");
     if (!S.accounts[ac]) S.accounts[ac] = blankAcc();
-    if (!S.accounts[ac].ledgers[led]) S.accounts[ac].ledgers[led] = blankLedger();
-    const lg = S.accounts[ac].ledgers[led];
+    const ledIdx = ensureLedger(ac, ledName);
+    const lg = S.accounts[ac].ledgers[ledIdx];
     lg.records.push(...byKey[k]);
     const existing = lg.quickNotes.slice();
     const newNotes = [];
@@ -2094,10 +2386,10 @@ function applyImport(matrix, fileName){
     lg.quickNotes = arr;
   });
   save();
-  renderAcctChips();
+  renderAcctChips(); renderLedgerChips(); renderLedgerMgmt(); renderAcctMgmt();
   initRange(); buildPointRange(); syncPointRange();
   renderQuickNotes(); renderFiltPills();
-  renderTotal(); renderList(); renderCmp();
+  renderTotal(); renderList(); renderCmp(); renderAccountBox();
   go("total");
   toast(`导入成功：${newRecs.length} 条记录`);
 }
@@ -2124,8 +2416,6 @@ renderAccountBox();
 cloudBoot();
 </script>
 
-<script>
-if ("serviceWorker" in navigator){ window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
-</script>
+<script>if ("serviceWorker" in navigator){ window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(function(){}); }); }</script>
 </body>
 </html>
