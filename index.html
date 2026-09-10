@@ -1,0 +1,2131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FFFCF3">
+<title>打工人小账本</title>
+<style>
+/* ================= 基础 · 奶油薄荷 ================= */
+:root{
+  --cream:#FFFCF3; --cream2:#F7F1E2; --paper:#FFFFFF;
+  --mint:#8FD6BE; --mint-d:#2F8F72; --mint-l:#E3F4EE; --mint-ll:#F1FAF6;
+  --coral:#E08A85; --coral-d:#B16067; --coral-l:#FBE9E6;
+  --sun:#F3C969; --sun-l:#FDF3DC;
+  --ink:#45443E; --ink2:#7C786E; --ink3:#A6A199;
+  --line:#E9E1CE; --line2:#DBD2BB;
+  --r:14px; --r-s:10px;
+  --fs-xs:10.5px; --fs-s:11.5px; --fs-m:12.5px; --fs-l:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:var(--fs-m); color:var(--ink); background:#EDE7DA;
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+button{font-family:inherit;font-size:inherit;color:inherit;border:none;background:none;padding:0;cursor:pointer}
+input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
+.ic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
+.num{font-variant-numeric:tabular-nums}
+.pos{color:var(--mint-d)} .neg{color:var(--coral-d)} .mut{color:var(--ink2)} .dim{color:var(--ink3)}
+
+/* ================= 手机外框（桌面预览用） ================= */
+.stage{height:100%;display:grid;place-items:center;padding:16px}
+.phone{
+  position:relative;width:393px;height:min(852px, calc(100dvh - 32px));
+  background:var(--cream);border-radius:46px;overflow:hidden;
+  display:flex;flex-direction:column;
+  box-shadow:0 0 0 10px #1C1B19, 0 0 0 12px #3A3833, 0 34px 70px -22px rgba(50,42,28,.6);
+}
+.island{
+  position:absolute;top:11px;left:50%;transform:translateX(-50%);
+  width:124px;height:36px;border-radius:20px;background:#0B0B0B;z-index:30;
+}
+.island::after{content:"";position:absolute;right:11px;top:11px;width:9px;height:9px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, #2A3A44 0 40%, #0B0B0B 60%)}
+
+/* 导航条 */
+.nav{height:40px;flex:none;display:flex;align-items:center;padding:0 16px;gap:8px;
+  background:var(--cream);border-bottom:1px solid var(--line)}
+.nav h1{margin:0;font-size:15px;font-weight:800;letter-spacing:.4px}
+.nav .sub{font-size:var(--fs-xs);color:var(--ink3);font-weight:600;margin-left:2px}
+/* 设置按钮（左上角） */
+.nav-gear{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--ink2);
+  background:var(--cream2);flex:none;margin-right:2px}
+.nav-gear .ic{width:18px;height:18px}
+.nav-gear:active{background:var(--mint-l);color:var(--mint-d)}
+/* 设置 / 危险操作按钮 */
+.dangerbtn{height:44px;border-radius:11px;background:var(--coral-l);color:var(--coral-d);font-size:var(--fs-m);
+  font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;width:100%}
+.dangerbtn .ic{width:16px;height:16px}
+.dangerbtn:active{transform:translateY(1.5px);background:var(--coral);color:#fff}
+.dangerbtn.weak{background:var(--cream2);color:var(--ink2)}
+.dangerbtn.weak:active{background:var(--line2);color:var(--ink)}
+.set-row{display:flex;gap:8px;flex:none}
+.set-row .dangerbtn{flex:1}
+
+/* 内容区 */
+.screen{flex:1;min-height:0;position:relative}
+.page{position:absolute;inset:0;display:none;flex-direction:column;padding:10px 14px 8px;gap:9px}
+.page.on{display:flex;animation:fin .22s ease}
+@keyframes fin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* 卡片 */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.card.tight{padding:8px 10px}
+.h{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.h .ic{width:14px;height:14px;color:var(--mint-d)}
+.h b{font-size:var(--fs-m);font-weight:800;letter-spacing:.2px}
+.h .t{margin-left:auto;font-size:var(--fs-xs);color:var(--ink3);font-weight:600}
+
+/* ================= 页1 记账 ================= */
+.seg{display:flex;background:var(--cream2);border-radius:11px;padding:3px;gap:2px;flex:none;
+  border:1px solid var(--line)}
+.seg button{flex:1;height:30px;border-radius:8px;font-size:var(--fs-m);font-weight:700;color:var(--ink2)}
+.seg button.on{background:#fff;color:var(--mint-d);box-shadow:0 1px 3px rgba(0,0,0,.09)}
+
+.amtbox{background:linear-gradient(150deg,#F1FAF6,#FFFDF8);border:1px solid #CFEBE0;border-radius:var(--r);
+  padding:7px 14px;display:flex;align-items:center;gap:8px;flex:none}
+.amtbox .cur{font-size:19px;font-weight:700;color:var(--mint-d);opacity:.7;flex:none}
+.amtin{flex:1;min-width:0;border:none;background:transparent;font-size:30px;font-weight:800;
+  letter-spacing:-1.2px;color:var(--ink);width:100%;padding:0}
+.amtin::placeholder{color:var(--ink3);opacity:.5;font-weight:700}
+.amtin:focus{outline:none}
+
+.catgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;flex:none}
+.catgrid button{border:1px solid var(--line);background:#FFFDF8;border-radius:11px;padding:6px 2px 5px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink2);min-height:50px}
+.catgrid button .ic{width:19px;height:19px}
+.catgrid button span{font-size:var(--fs-xs);font-weight:700}
+.catgrid button.on{background:var(--mint-l);border-color:var(--mint);color:var(--mint-d)}
+
+.objwrap{display:flex;flex-direction:column;gap:4px;flex:none}
+.objlabel{font-size:var(--fs-xs);font-weight:800;color:var(--ink2);padding-left:2px}
+.objchips{display:flex;gap:6px;flex-wrap:wrap}
+.objchips button{border:1px solid var(--line);background:#FFFDF8;border-radius:99px;padding:6px 12px;
+  font-size:var(--fs-s);font-weight:700;color:var(--ink2)}
+.objchips button.on{background:var(--mint);color:#fff;border-color:var(--mint)}
+
+/* 账号切换 */
+.acctwrap{display:flex;flex-direction:column;gap:4px;flex:none}
+.acctwrap .objlabel{color:var(--mint-d)}
+.acctchips{display:flex;gap:6px}
+.acctchips button{border:1px solid var(--line);background:#FFFDF8;border-radius:99px;padding:5px 16px;font-size:var(--fs-m);font-weight:800;color:var(--ink2)}
+.acctchips button.on{background:var(--mint-d);color:#fff;border-color:var(--mint-d)}
+/* 账本切换（主账本 / 亲子账本） */
+.ledgerwrap{display:flex;flex-direction:column;gap:4px;flex:none;margin-top:1px}
+.ledgerwrap .objlabel{color:var(--sun-d,#B98B1C)}
+.ledgerchips button.on{background:var(--sun);color:#7a5a00;border-color:var(--sun)}
+
+.row2{display:flex;gap:7px;flex:none;align-items:center}
+.inp{flex:1;min-width:0;height:36px;padding:0 11px;border-radius:10px;border:1px solid var(--line2);
+  background:#FFFDF8;font-size:var(--fs-m);font-weight:600}
+.inp::placeholder{color:var(--ink3);font-weight:500}
+.inp:focus{border-color:var(--mint);background:#fff}
+
+.bigbtn{height:46px;border-radius:13px;background:var(--mint);color:#fff;font-size:var(--fs-l);font-weight:800;
+  box-shadow:0 2px 0 #58AC8E;flex:none;display:flex;align-items:center;justify-content:center;gap:6px}
+.bigbtn:active{transform:translateY(1.5px);box-shadow:0 0 0 #58AC8E}
+.bigbtn .ic{width:17px;height:17px}
+
+/* 高频备注快捷（可增删） */
+.quicknotes{display:flex;flex-wrap:wrap;gap:5px;flex:none;max-height:58px;overflow-y:auto;padding-top:1px;align-items:center}
+.qn{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line2);background:#FFFDF8;border-radius:99px;
+  padding:4px 6px 4px 10px;font-size:10px;font-weight:700;color:var(--ink2);white-space:nowrap}
+.qn:active{background:var(--mint-l);color:var(--mint-d)}
+.qn .x{width:14px;height:14px;border-radius:50%;display:grid;place-items:center;background:var(--cream2);
+  color:var(--ink3);font-size:13px;line-height:1;flex:none}
+.qn .x:active{background:var(--coral);color:#fff}
+.qn.add{border-style:dashed;color:var(--mint-d);padding:4px 10px}
+.qn.add .ic{width:11px;height:11px}
+.qn-in{flex:1;min-width:90px;height:26px;border:1px solid var(--mint);border-radius:99px;padding:0 10px;
+  font-size:11px;font-weight:700;background:#fff}
+/* 详单筛选 */
+.filts{display:flex;flex-direction:column;gap:5px;flex:none}
+.filtrow{display:flex;gap:6px;align-items:center}
+.flab{font-size:9.5px;font-weight:800;color:var(--ink3);flex:none;width:40px}
+.fpills{display:flex;gap:5px;overflow-x:auto;flex:1;min-width:0;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.fpills::-webkit-scrollbar{display:none}
+.fpill{padding:4px 9px;border-radius:99px;border:1px solid var(--line2);background:#FFFDF8;font-size:10px;font-weight:700;
+  color:var(--ink2);white-space:nowrap;flex:none}
+.fpill.on{background:var(--mint);color:#fff;border-color:var(--mint)}
+.fpill.all.on{background:var(--mint-d);border-color:var(--mint-d)}
+.fpills.grid2{display:grid;grid-template-columns:repeat(5,1fr);gap:5px 4px;overflow:visible;flex:1;min-width:0}
+.fpills.grid2 .fpill{text-align:center;padding:4px 2px;justify-content:center}
+/* 高频词：多行换行，不横向滑动 + 可删除 */
+.fpills.wrap{display:flex;flex-wrap:wrap;gap:5px;overflow:visible;flex:1;min-width:0}
+.fpill .px{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;margin-left:4px;
+  background:var(--cream2);color:var(--ink3);font-size:13px;line-height:1;font-weight:800;flex:none}
+.fpill.on .px{background:rgba(255,255,255,.38);color:#fff}
+.fpill .px:active{background:var(--coral);color:#fff}
+.fp-none{font-size:10px;color:var(--ink3);font-weight:600;padding:3px 2px}
+.kw{width:100%;flex:none}
+.lsum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:none}
+.lsum div{background:var(--cream2);border:1px solid var(--line);border-radius:10px;padding:5px 4px;text-align:center}
+.lsum .k{font-size:9.5px;color:var(--ink2);font-weight:700}
+.lsum .v{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px;letter-spacing:-.3px}
+.lsum .v.out{color:var(--coral-d)}
+.lsum .v.pos{color:var(--mint-d)}
+
+/* ================= 区间选择 ================= */
+.range{display:flex;gap:6px;flex:none}
+.range select{flex:1;min-width:0;height:34px;padding:0 24px 0 9px;border-radius:10px;border:1px solid var(--line2);
+  background:#FFFDF8;font-size:var(--fs-m);font-weight:700;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%237C786E' stroke-width='2.6' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center}
+.range select:disabled{opacity:.4}
+
+.rng2{display:flex;gap:10px;flex:none}
+.rngcol{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.rngcap{font-size:var(--fs-xs);font-weight:800;color:var(--ink2);padding-left:2px}
+
+/* 汇总条 */
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:none}
+.sum div{background:var(--mint-ll);border:1px solid #D8EEE5;border-radius:11px;padding:6px 8px}
+.sum .k{font-size:var(--fs-xs);color:var(--ink2);font-weight:700}
+.sum .v{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.4px;margin-top:1px}
+.sum div.out{background:var(--coral-l);border-color:#F3D2CE}
+.sum div.out .v{color:var(--coral-d)}
+
+/* 条形图 */
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar-row .top{display:flex;justify-content:space-between;align-items:baseline;font-size:var(--fs-s);margin-bottom:3px}
+.bar-row .nm{font-weight:700;display:flex;align-items:center;gap:4px;min-width:0}
+.bar-row .nm .ic{width:12px;height:12px;color:var(--ink3)}
+.bar-row .nm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-row .vv{font-weight:800;font-variant-numeric:tabular-nums;flex:none}
+.bar-row .vv em{font-style:normal;color:var(--ink3);font-weight:600;font-size:var(--fs-xs);margin-left:4px}
+.track{height:9px;border-radius:99px;background:var(--cream2);overflow:hidden;border:1px solid var(--line)}
+.track>i{display:block;height:100%;border-radius:99px;transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.track.big{height:15px}
+.track.big>i{background-image:linear-gradient(90deg,rgba(255,255,255,.28),rgba(255,255,255,0))}
+
+/* 对比 */
+.cmp{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:11px;padding-right:2px}
+.cmp-row{display:flex;gap:8px;align-items:center}
+.cmp-lab{width:58px;flex:none;font-size:var(--fs-s);font-weight:800;color:var(--ink2);line-height:1.2}
+.cmp-bars{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.cmp-line{display:flex;align-items:center;gap:7px}
+.cmp-line .track{flex:1}
+.cmp-v{width:66px;flex:none;text-align:right;font-size:var(--fs-xs);font-weight:800;font-variant-numeric:tabular-nums}
+
+/* 详单 */
+.listhead{display:flex;font-size:var(--fs-xs);color:var(--ink3);font-weight:700;padding:0 2px 2px;flex:none}
+.list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -3px;padding:0 3px}
+.rec{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:11px;background:#FFFDF8;
+  border:1px solid var(--line);margin-bottom:5px}
+.rec .ci{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;flex:none;
+  background:var(--mint-l);color:var(--mint-d)}
+.rec .ci.inc{background:var(--sun-l);color:#B98B1C}
+.rec .ci .ic{width:14px;height:14px}
+.rec .bd{flex:1;min-width:0}
+.rec .l1{display:flex;align-items:baseline;gap:5px;font-size:var(--fs-m);font-weight:700}
+.rec .l1 .cn{color:var(--ink)}
+.rec .l1 .nt{color:var(--ink2);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.rec .l2{font-size:var(--fs-xs);color:var(--ink3);display:flex;gap:5px;margin-top:1px;align-items:center;flex-wrap:wrap}
+.rec .rr{text-align:right;flex:none}
+.rec .am{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+/* 收入隐私遮罩：cjy 主账号的收入金额默认 *****，点击查看 */
+.ink-mask{cursor:pointer;user-select:none;letter-spacing:1px;
+  background:var(--sun-l);color:#A57D14;border-radius:5px;padding:0 5px;
+  font-variant-numeric:tabular-nums;transition:background .15s}
+.ink-mask:hover{background:#F6E6B8}
+.ink-mask.revealed{background:transparent;color:inherit;padding:0}
+/* 云同步设置 */
+.set-inp{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+  background:var(--paper);color:var(--ink);font-size:var(--fs-s);font-weight:600;margin-bottom:7px}
+.set-inp:focus{border-color:var(--mint)}
+.sync-status{font-size:var(--fs-xs);color:var(--ink3);margin:2px 0 8px;line-height:1.55}
+.sync-status b{color:var(--mint-d)}
+.sync-btns{display:flex;gap:7px;margin-bottom:8px}
+.sync-btns .migbtn{flex:1}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px}
+.switch{width:40px;height:22px;border-radius:11px;background:var(--line2);position:relative;flex:none;transition:background .18s}
+.switch i{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .18s}
+.switch.on{background:var(--mint-d)}
+.switch.on i{left:21px}
+.crow{display:flex;align-items:center;gap:8px;padding:10px 2px;border-top:1px solid var(--line);cursor:pointer}
+.crow:first-child{border-top:none}
+.crow .lb{font-size:var(--fs-s);font-weight:700;flex:none}
+.crow .vl{margin-left:auto;font-size:var(--fs-xs);color:var(--ink3);text-align:right;line-height:1.4}
+.chkline{display:flex;align-items:center;gap:6px;font-size:var(--fs-s);font-weight:700;margin:2px 0 9px}
+.chkline input{width:15px;height:15px;accent-color:var(--mint-d)}
+.rec .del{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:var(--ink3);flex:none}
+.rec .del .ic{width:13px;height:13px}
+.flag{padding:0 4px;border-radius:4px;font-size:9.5px;font-weight:800}
+.f-obj{background:var(--mint-l);color:var(--mint-d)}
+.f-demo{background:var(--sun-l);color:#A57D14}
+.empty{text-align:center;padding:26px 10px;color:var(--ink3);font-size:var(--fs-s)}
+.empty .ic{width:26px;height:26px;margin:0 auto 6px;color:var(--line2);display:block;stroke-width:1.4}
+
+/* ================= 底部 Tab ================= */
+.tabs{flex:none;background:rgba(255,253,247,.96);border-top:1px solid var(--line);padding:5px 8px 0}
+.tabs .in{display:flex;height:48px}
+.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:var(--ink3);font-size:var(--fs-xs);font-weight:700}
+.tabs button .ic{width:20px;height:20px}
+.tabs button.on{color:var(--mint-d)}
+.homebar{height:22px;display:grid;place-items:center;padding-bottom:2px}
+.homebar i{display:block;width:134px;height:5px;border-radius:99px;background:#2C2B27;opacity:.85}
+
+/* Toast */
+#toast{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;z-index:60;
+  display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:calc(100% - 40px)}
+.toast{background:#3E3C36;color:#FFF9EC;padding:8px 14px;border-radius:12px;font-size:var(--fs-m);
+  font-weight:700;box-shadow:0 8px 20px -8px rgba(0,0,0,.5);display:flex;align-items:center;gap:6px;
+  animation:tin .26s;max-width:100%}
+.toast .ic{width:14px;height:14px;flex:none}
+.toast.ok{background:var(--mint-d)} .toast.err{background:var(--coral-d)}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* 保存确认（带撤销动作） */
+.toast.act{pointer-events:auto;background:var(--mint-d);padding:8px 12px}
+.toast.act .tx{font-weight:700;font-size:var(--fs-s)}
+.toast.act .undo{margin-left:6px;background:rgba(255,255,255,.22);color:#fff;border-radius:8px;
+  padding:4px 11px;font-size:var(--fs-xs);font-weight:800;flex:none}
+.toast.act .undo:active{background:rgba(255,255,255,.42)}
+
+/* 手机真机：铺满 */
+@media (max-width:430px),(max-height:700px){
+  .stage{padding:0;display:block}
+  .phone{width:100%;height:100dvh;border-radius:0;box-shadow:none;max-height:none}
+  .island{display:none}
+  .tabs{padding-bottom:0}
+  .homebar{height:calc(env(safe-area-inset-bottom, 0px) + 8px)}
+  .homebar i{display:none}
+}
+
+/* 数据迁移（导出/导入 Excel） */
+.mig-btns{display:flex;gap:8px;flex:none}
+.migbtn{flex:1;height:40px;border-radius:11px;font-size:var(--fs-m);font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:6px;color:#fff}
+.migbtn .ic{width:16px;height:16px}
+.migbtn.exp{background:var(--mint-d)}
+.migbtn.imp{background:var(--ink2)}
+.migbtn:active{transform:translateY(1.5px)}
+.mig-tip{font-size:9.5px;color:var(--ink3);font-weight:600;margin-top:6px;line-height:1.45}
+.mig-tip b{color:var(--mint-d)}
+
+/* 详单记录编辑弹层 */
+.sheetmask{position:absolute;inset:0;background:rgba(40,38,32,.45);z-index:70;display:none}
+.sheetmask.on{display:block;animation:fin .18s ease}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:71;background:var(--cream);
+  border-radius:18px 18px 0 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px));
+  display:none;flex-direction:column;gap:9px;max-height:92%;overflow-y:auto;
+  box-shadow:0 -12px 34px -12px rgba(0,0,0,.42)}
+.sheet.on{display:flex;animation:sup .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes sup{from{transform:translateY(100%)}to{transform:none}}
+.sh-head{display:flex;align-items:center;gap:8px;flex:none}
+.sh-head b{font-size:var(--fs-l);font-weight:800}
+.sh-head .wh{font-size:var(--fs-xs);color:var(--ink3);font-weight:700}
+.sh-head .cx{margin-left:auto;width:28px;height:28px;border-radius:9px;background:var(--cream2);
+  display:grid;place-items:center;color:var(--ink2);font-size:19px;line-height:1;flex:none}
+.sh-btns{display:flex;gap:8px;flex:none}
+.sh-btns button{height:42px;border-radius:11px;font-size:var(--fs-m);font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:5px;color:#fff}
+.sh-btns button .ic{width:16px;height:16px}
+.sh-save{flex:1;background:var(--mint);box-shadow:0 2px 0 #58AC8E}
+.sh-save:active{transform:translateY(1.5px);box-shadow:0 0 0 #58AC8E}
+.sh-cancel{width:58px;flex:none;background:var(--cream2);color:var(--ink2)}
+.sh-del{width:58px;flex:none;background:var(--coral-l);color:var(--coral-d)}
+.rec{cursor:pointer}
+.rec .del.edit{color:var(--mint-d)}
+</style>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-note" viewBox="0 0 24 24"><path d="M5.5 3.6h13v16.8H5.5z"/><path d="M9 8.4h6M9 12h6M9 15.6h3.6"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19.4h16"/><path d="M6.6 16.4V9.6M11.4 16.4V5.4M16.2 16.4v-5.6"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M8.4 6.6h11M8.4 12h11M8.4 17.4h11M4.4 6.6h.02M4.4 12h.02M4.4 17.4h.02" stroke-width="2.2"/></symbol>
+<symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3.6 7.6h13.8a2.4 2.4 0 0 1 2.4 2.4v7.4a2.4 2.4 0 0 1-2.4 2.4H6a2.4 2.4 0 0 1-2.4-2.4z"/><path d="M3.6 7.6V6a2 2 0 0 1 2-2h10.4"/><circle cx="16.2" cy="13.5" r="1.1" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.6 9.4 17.4 19.5 6.9"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4.6v14.8M4.6 12h14.8"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6.4h16M9.4 6.4V4.2h5.2v2.2M6.4 6.4l1 13.4h9.2l1-13.4"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3.6v11.8M7.4 11l4.6 4.6L16.6 11M4.4 20.4h15.2"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="M12 15.4V3.6M7.4 8.2 12 3.6l4.6 4.6M4.4 20.4h15.2"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M4.6 19.4h3.2L19 8.2a2.26 2.26 0 0 0-3.2-3.2L4.6 16.2z"/><path d="M14.9 5.5 18.5 9.1"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1.8v3.1M12 19.1v3.1M1.8 12h3.1M19.1 12h3.1M4.7 4.7l2.2 2.2M17.1 17.1l2.2 2.2M19.3 4.7l-2.2 2.2M6.9 17.1l-2.2 2.2"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7.3 18.6h9.6a3.5 3.5 0 0 0 .3-7 5.3 5.3 0 0 0-10.2-1.5 3.8 3.8 0 0 0 .3 8.5z"/></symbol>
+<symbol id="c-food" viewBox="0 0 24 24"><path d="M3.6 11.4h16.8a8.4 8.4 0 0 1-8.4 8.4 8.4 8.4 0 0 1-8.4-8.4z"/><path d="M2.4 20.6h19.2"/><path d="M9 8.4c0-1.2 1-1.4 1-2.6M13 8.4c0-1.2 1-1.4 1-2.6"/></symbol>
+<symbol id="c-transit" viewBox="0 0 24 24"><rect x="4.4" y="3.6" width="15.2" height="13.4" rx="2.6"/><path d="M4.4 10.6h15.2M8 20.4v-3.4M16 20.4v-3.4"/><path d="M8.2 14.4h.02M15.8 14.4h.02" stroke-width="2.6"/></symbol>
+<symbol id="c-shop" viewBox="0 0 24 24"><path d="M5.4 7.6h13.2l-1.1 12.8H6.5z"/><path d="M9 9.6V6.4a3 3 0 0 1 6 0v3.2"/></symbol>
+<symbol id="c-home" viewBox="0 0 24 24"><path d="M3.4 10.6 12 3.4l8.6 7.2"/><path d="M5.6 9.4V20.6h12.8V9.4"/><path d="M10 20.6v-5.8h4v5.8"/></symbol>
+<symbol id="c-fun" viewBox="0 0 24 24"><path d="M9.4 17.6V6.2l10.4-2v11.2"/><circle cx="6.6" cy="17.8" r="2.6"/><circle cx="16.8" cy="15.6" r="2.6"/></symbol>
+<symbol id="c-med" viewBox="0 0 24 24"><rect x="3.4" y="6.4" width="17.2" height="13.2" rx="2.6"/><path d="M8.6 6.4V4.6a1.6 1.6 0 0 1 1.6-1.6h3.6a1.6 1.6 0 0 1 1.6 1.6v1.8"/><path d="M12 10.4v5.2M9.4 13h5.2"/></symbol>
+<symbol id="c-study" viewBox="0 0 24 24"><path d="M3.6 4.6h6.6A2.4 2.4 0 0 1 12 7v12a2 2 0 0 0-2-2H3.6z"/><path d="M20.4 4.6h-6.6A2.4 2.4 0 0 0 12 7v12a2 2 0 0 1 2-2h6.4z"/></symbol>
+<symbol id="c-gift" viewBox="0 0 24 24"><rect x="3.4" y="8.6" width="17.2" height="4.2" rx="1.2"/><path d="M5.2 12.8v7.6h13.6v-7.6M12 8.6v11.8"/><path d="M12 8.6S10.6 4 8.4 4a2.3 2.3 0 0 0 0 4.6zM12 8.6S13.4 4 15.6 4a2.3 2.3 0 0 1 0 4.6z"/></symbol>
+<symbol id="c-other" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="none"/></symbol>
+<symbol id="c-snack" viewBox="0 0 24 24"><path d="M7 8.4 6 5.2h12l-1 3.2"/><path d="M7 8.4h10v11a1.3 1.3 0 0 1-1.3 1.3H8.3A1.3 1.3 0 0 1 7 19.4z"/><path d="M10.4 12.2h3.2M10.4 15h3.2"/></symbol>
+<symbol id="c-salary" viewBox="0 0 24 24"><path d="M3.6 7.6h13.8a2.4 2.4 0 0 1 2.4 2.4v7.4a2.4 2.4 0 0 1-2.4 2.4H6a2.4 2.4 0 0 1-2.4-2.4z"/><path d="M3.6 7.6V6a2 2 0 0 1 2-2h10.4"/><path d="M16.6 12.4h.02" stroke-width="2.6"/></symbol>
+<symbol id="c-side" viewBox="0 0 24 24"><path d="M12 3.4 13.7 9 19.4 10.6 13.7 12.2 12 17.8 10.3 12.2 4.6 10.6 10.3 9z"/></symbol>
+<symbol id="c-invest" viewBox="0 0 24 24"><path d="M4 19.4h16"/><path d="M4.6 15.2 9.4 10l3.6 3.2 6-6.4"/><path d="M19 6.8h-3.4M19 6.8v3.4"/></symbol>
+</defs></svg>
+
+<div class="stage">
+<div class="phone">
+  <div class="island"></div>
+
+  <div class="nav">
+    <button class="nav-gear" id="btnSettings" aria-label="设置"><svg class="ic"><use href="#i-gear"/></svg></button>
+    <h1 id="navTitle">记一笔</h1>
+    <span class="sub" id="navSub"></span>
+  </div>
+
+  <div class="screen">
+
+    <!-- ============ 页 1 · 记账 ============ -->
+    <section class="page on" id="p-add">
+      <div class="acctwrap">
+        <div class="objlabel">当前账号</div>
+        <div class="acctchips"></div>
+      </div>
+      <div class="ledgerwrap">
+        <div class="objlabel">当前账本</div>
+        <div class="ledgerchips acctchips"></div>
+      </div>
+
+      <div class="seg">
+        <button id="tExpense" class="on">支出</button>
+        <button id="tIncome">收入</button>
+      </div>
+
+      <div class="amtbox">
+        <span class="cur">¥</span>
+        <input class="amtin" id="amtIn" type="number" inputmode="decimal" placeholder="0" min="0" step="0.01">
+      </div>
+
+      <div class="catgrid" id="catGrid"></div>
+
+      <div class="objwrap" id="objWrap">
+        <div class="objlabel">支出对象</div>
+        <div class="objchips" id="objChips"></div>
+      </div>
+
+      <div class="row2" id="addDateTime">
+        <input class="inp" id="addDate" type="date" title="消费日期">
+        <input class="inp" id="addTime" type="time" title="消费时间">
+      </div>
+
+      <div class="row2">
+        <input class="inp" id="note" placeholder="备注（选填）" maxlength="24">
+      </div>
+
+      <div class="quicknotes" id="quickNotes"></div>
+
+      <button class="bigbtn" id="saveBtn"><svg class="ic"><use href="#i-check"/></svg>保存这笔</button>
+    </section>
+
+    <!-- ============ 页 · 对比 ============ -->
+    <section class="page" id="p-cmp">
+      <div class="acctwrap">
+        <div class="objlabel">当前账号</div>
+        <div class="acctchips"></div>
+      </div>
+      <div class="ledgerwrap">
+        <div class="objlabel">当前账本</div>
+        <div class="ledgerchips acctchips"></div>
+      </div>
+      <div class="range">
+        <select id="cmpY"></select>
+        <select id="cmpM"></select>
+        <select id="cmpD"></select>
+      </div>
+
+      <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div class="h"><svg class="ic"><use href="#i-chart"/></svg><b>收支对比</b>
+          <span class="t" id="cmpUnit">—</span></div>
+        <div class="cmp" id="cmpBars"></div>
+      </div>
+    </section>
+
+    <!-- ============ 页 3 · 总计 ============ -->
+    <section class="page" id="p-total">
+      <div class="acctwrap">
+        <div class="objlabel">当前账号</div>
+        <div class="acctchips"></div>
+      </div>
+      <div class="ledgerwrap">
+        <div class="objlabel">当前账本</div>
+        <div class="ledgerchips acctchips"></div>
+      </div>
+      <div class="range">
+        <select id="selY"></select>
+        <select id="selM"></select>
+        <select id="selD"></select>
+      </div>
+
+      <div class="sum">
+        <div><div class="k">收入</div><div class="v num pos" id="sIn">¥0</div></div>
+        <div class="out"><div class="k">支出</div><div class="v num" id="sOut">¥0</div></div>
+        <div><div class="k">结余</div><div class="v num" id="sBal">¥0</div></div>
+      </div>
+
+      <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div class="h"><svg class="ic"><use href="#i-wallet"/></svg><b>支出分类排行</b>
+          <span class="t" id="catTag">—</span></div>
+        <div class="bars" id="catBars" style="flex:1;min-height:0;overflow-y:auto"></div>
+      </div>
+    </section>
+
+    <!-- ============ 页 · 详单 ============ -->
+    <section class="page" id="p-list">
+      <div class="acctwrap">
+        <div class="objlabel">当前账号</div>
+        <div class="acctchips"></div>
+      </div>
+      <div class="ledgerwrap">
+        <div class="objlabel">当前账本</div>
+        <div class="ledgerchips acctchips"></div>
+      </div>
+      <div class="range">
+        <select id="selY2"></select>
+        <select id="selM2"></select>
+        <select id="selD2"></select>
+      </div>
+
+      <input class="inp kw" id="listKw" placeholder="🔍 关键词筛选（分类 / 备注 / 对象 / 日期）" maxlength="20">
+
+      <div class="filts">
+        <div class="filtrow"><span class="flab">分类</span><div class="fpills grid2" id="fCatPills"></div></div>
+        <div class="filtrow"><span class="flab">高频词</span><div class="fpills wrap" id="fNotePills"></div></div>
+      </div>
+
+      <div class="lsum" id="listSum"></div>
+
+      <div class="listhead">
+        <span style="flex:1">时间 · 分类 · 对象 · 详情</span>
+        <span class="mut" style="margin-right:52px">点记录可改</span>
+        <span>金额</span>
+      </div>
+
+      <div class="list" id="recList"></div>
+    </section>
+
+  </div>
+
+  <div class="tabs">
+    <div class="in">
+      <button class="on" data-tab="add"><svg class="ic"><use href="#i-note"/></svg>记账</button>
+      <button data-tab="total"><svg class="ic"><use href="#i-wallet"/></svg>总计</button>
+      <button data-tab="list"><svg class="ic"><use href="#i-list"/></svg>详单</button>
+      <button data-tab="cmp"><svg class="ic"><use href="#i-chart"/></svg>对比</button>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div class="sheetmask" id="setMask"></div>
+  <div class="sheet" id="setSheet">
+    <div class="sh-head">
+      <b>设置</b>
+      <button class="cx" id="setClose" aria-label="关闭">×</button>
+    </div>
+
+    <div class="card tight">
+      <div class="h"><svg class="ic"><use href="#i-cloud"/></svg><b>云同步</b>
+        <span class="t" id="cloudTag">未登录</span></div>
+      <div id="accountBox"></div>
+    </div>
+
+    <div class="card tight">
+      <div class="h"><svg class="ic"><use href="#i-wallet"/></svg><b>数据迁移</b>
+        <span class="t">导出 / 导入 Excel</span></div>
+      <div class="mig-btns">
+        <button class="migbtn exp" id="btnExport2"><svg class="ic"><use href="#i-down"/></svg>导出 Excel</button>
+        <button class="migbtn imp" id="btnImport2"><svg class="ic"><use href="#i-up"/></svg>导入 Excel</button>
+      </div>
+      <input type="file" id="fileInput2" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
+      <div class="mig-tip">导出<b>全部账号</b>的原始账目明细（含收入/支出），可分享到微信或存到手机；导入时自动识别列、并入现有数据，方便换机迁移。</div>
+    </div>
+
+    <div class="card tight">
+      <div class="h"><svg class="ic"><use href="#i-trash"/></svg><b>清空数据</b>
+        <span class="t">不可恢复</span></div>
+      <div class="set-row" style="margin-bottom:8px">
+        <button class="dangerbtn weak" id="btnClearCur"><svg class="ic"><use href="#i-trash"/></svg>清空当前账号</button>
+      </div>
+      <button class="dangerbtn" id="btnClearAll"><svg class="ic"><use href="#i-trash"/></svg>清空全部账号数据</button>
+    </div>
+  </div>
+
+  <div class="sheetmask" id="sheetMask"></div>
+  <div class="sheet" id="editSheet">
+    <div class="sh-head">
+      <b>修改这笔</b><span class="wh" id="eWho"></span>
+      <button class="cx" id="eClose" aria-label="关闭">×</button>
+    </div>
+    <div class="seg">
+      <button id="eExpense" class="on">支出</button>
+      <button id="eIncome">收入</button>
+    </div>
+    <div class="amtbox">
+      <span class="cur">¥</span>
+      <input class="amtin" id="eAmt" type="number" inputmode="decimal" placeholder="0" min="0" step="0.01">
+    </div>
+    <div class="catgrid" id="eCatGrid"></div>
+    <div class="objwrap" id="eObjWrap">
+      <div class="objlabel">支出对象</div>
+      <div class="objchips" id="eObjChips"></div>
+    </div>
+    <div class="row2">
+      <input class="inp" id="eDate" type="date">
+      <input class="inp" id="eTime" type="time">
+    </div>
+    <input class="inp" id="eNote" placeholder="备注（选填）" maxlength="24">
+    <div class="sh-btns">
+      <button class="sh-cancel" id="eCancel">取消</button>
+      <button class="sh-save" id="eSave"><svg class="ic"><use href="#i-check"/></svg>保存修改</button>
+      <button class="sh-del" id="eDel" aria-label="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================
+   打工人小账本 · 手机四页版（纯记账，不记录工时）
+   数据仅存本机 localStorage，无任何网络请求
+   ========================================================= */
+const KEY = "dgr_xiaozhangben_v1";
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+let _seq = 0;
+const uid = () => Date.now().toString(36) + "_" + (++_seq).toString(36).padStart(4,"0") + Math.random().toString(36).slice(2,6);
+const pad = n => String(n).padStart(2,"0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const hhmm = d => pad(d.getHours()) + ":" + pad(d.getMinutes());
+const num = (v, d=0) => { const n = parseFloat(v); return isFinite(n) ? n : d; };
+function money(n){
+  const neg = n < 0; n = Math.abs(n);
+  const s = (Math.round(n*100)/100).toLocaleString("zh-CN",{minimumFractionDigits:0,maximumFractionDigits:2});
+  return (neg?"-¥":"¥") + s;
+}
+const money0 = n => (n<0?"-¥":"¥") + Math.round(Math.abs(n)).toLocaleString("zh-CN");
+const esc = s => String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+/* cjy 主账号收入隐私遮罩：收入/净额等敏感数字默认 *****，点击后查看 */
+function inkMask(formatted){
+  if (S.cur !== "cjy") return formatted;            // 仅主账号 cjy 遮罩
+  return `<span class="ink-mask" data-real="${esc(formatted)}" role="button" tabindex="0" title="点击查看收入">*****</span>`;
+}
+
+/* ---------- 分类与支出对象 ---------- */
+const CATS = {
+  expense:[
+    {id:"food",name:"餐饮",ic:"c-food"},
+    {id:"transit",name:"出行",ic:"c-transit"},
+    {id:"shop",name:"购物",ic:"c-shop"},
+    {id:"fun",name:"娱乐",ic:"c-fun"},
+    {id:"study",name:"教育",ic:"c-study"},
+    {id:"gift",name:"人情",ic:"c-gift"},
+    {id:"other",name:"其他",ic:"c-other"}
+  ],
+  income:{
+    cjy:[ {id:"salary",name:"工资",ic:"c-salary"},
+          {id:"side",name:"副业",ic:"c-side"},
+          {id:"invest",name:"理财",ic:"c-invest"},
+          {id:"other",name:"其他",ic:"c-other"} ],
+    lc:[  {id:"labor",name:"劳务费",ic:"c-salary"},
+          {id:"scholar",name:"奖学金",ic:"c-study"},
+          {id:"lucky",name:"压岁钱",ic:"c-gift"},
+          {id:"other",name:"其他",ic:"c-other"} ]
+  }
+};
+const catOf = (t, id) => {
+  const list = t === "expense" ? CATS.expense : (CATS.income[S.cur] || CATS.income.cjy);
+  return list.find(c => c.id === id) || list[list.length-1];
+};
+const TARGETS = {
+  cjy:{ list:["家庭","队友","个人","亲子","其他"], def:"个人" },
+  lc: { list:["家庭成员","朋友","自己","其他"],     def:"自己" }
+};
+const targetsOf = k => TARGETS[k] || TARGETS.cjy;
+/* 校验用：任一账号出现过的对象都算合法，避免切账号后旧记录被改写 */
+const ALL_TARGETS = Array.from(new Set(Object.values(TARGETS).flatMap(t => t.list)));
+
+/* ---------- 存储 ---------- */
+const store = (function(){
+  let ok = false;
+  try { localStorage.setItem("__t","1"); localStorage.removeItem("__t"); ok = true; } catch(e){ ok = false; }
+  return { ok, get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+           set(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } } };
+})();
+
+/* 历史分类 id → 现用分类 id（改分类名后旧记录不会落到"其他"） */
+const CAT_MIGRATE = { snack:"food", home:"other", med:"other" };
+
+/* ---------- 初始数据 ---------- */
+/* 不含任何示例数据：全新安装时各账号均为 0 条记录 */
+function blankLedger(){ return { records: [], quickNotes: [] }; }
+/* 账号结构：当前账本 cur + 本地密码 pass + 云端配置 cloud + 两个账本 ledgers{main,kid} */
+function blankAcc(pass){
+  return { cur: "main", pass: pass || "",
+           cloud: { token: "", gistId: "", autoSync: true, lastSync: 0 },
+           ledgers: { main: blankLedger(), kid: blankLedger() } };
+}
+
+
+/* ---------- 多账号（每个账号含「主账本」+「亲子账本」两套独立账本） ---------- */
+const ACCOUNTS = ["cjy","lc","chenjy"];
+const ACC_DISPLAY = { cjy: "主账号", lc: "副账号", chenjy: "陈记" };
+const ACC_ALIASES = (() => {
+  const m = {};
+  const add = (ac, keys) => keys.forEach(k => { m[k.toLowerCase()] = ac; });
+  add("cjy", ["cjy","c","主账号","主","本人","我自己","我","我的","cjy主","主账户","本人主账号","本人账户","主记","工资卡"]);
+  add("lc",  ["lc","l","副账号","副","家人","老婆","孩子","lc副","副账户","家人账户","副记","零钱"]);
+  add("chenjy", ["chenjy","chen","陈记","陈","晨记","cj","cjy2","小陈"]);
+  return m;
+})();
+function resolveAccount(raw){
+  raw = (raw || "").trim();
+  if (!raw) return null;
+  const low = raw.toLowerCase();
+  if (ACCOUNTS.indexOf(low) >= 0) return low;          // 精确内部 id：cjy / lc / chenjy
+  if (low in ACC_ALIASES) return ACC_ALIASES[low];      // 各种可读别名
+  return null;                                          // 无法识别
+}
+/* 当前账本对象（主账本 / 亲子账本） */
+function curAcc(){ return S.accounts[S.cur].ledgers[S.accounts[S.cur].cur]; }
+function curAccount(){ return S.accounts[S.cur]; }
+function curLedgerName(){ return S.accounts[S.cur].cur; }
+function setLedger(name){ if (name === "main" || name === "kid") S.accounts[S.cur].cur = name; }
+function topNotesFrom(records){
+  const cnt = {};
+  records.forEach(r => { const n = (r.note||"").trim(); if (n) cnt[n] = (cnt[n]||0) + 1; });
+  return Object.keys(cnt).sort((a,b) => cnt[b]-cnt[a]).slice(0, 20);
+}
+function normalizeAcc(acc, key){
+  if (!acc || typeof acc !== "object") acc = {};
+  /* 兼容旧版：顶层 records 视为「主账本」 */
+  if (acc.records){
+    acc.ledgers = { main: { records: acc.records, quickNotes: acc.quickNotes || [] }, kid: blankLedger() };
+  }
+  if (!acc.ledgers || typeof acc.ledgers !== "object") acc.ledgers = {};
+  if (!acc.ledgers.main) acc.ledgers.main = blankLedger();
+  if (!acc.ledgers.kid)  acc.ledgers.kid  = blankLedger();
+  const defT = targetsOf(key).def;
+  ["main","kid"].forEach(L => {
+    const lg = acc.ledgers[L];
+    if (!Array.isArray(lg.records)) lg.records = [];
+    if (!Array.isArray(lg.quickNotes)) lg.quickNotes = topNotesFrom(lg.records);
+    lg.records = lg.records.map(r => Object.assign(
+      {id:uid(),date:iso(new Date()),time:"",type:"expense",amount:0,cat:"other",target:"",note:"",demo:false}, r));
+    lg.records.forEach(r => {
+      if (r.type === "income") r.target = "";
+      else {
+        if (CAT_MIGRATE[r.cat]) r.cat = CAT_MIGRATE[r.cat];
+        if (!ALL_TARGETS.includes(r.target)) r.target = defT;
+      }
+    });
+  });
+  if (acc.cur !== "main" && acc.cur !== "kid") acc.cur = "main";
+  if (typeof acc.pass !== "string") acc.pass = "";
+  acc.cloud = Object.assign({ token:"", gistId:"", autoSync:true, lastSync:0 }, acc.cloud || {});
+  return acc;
+}
+let S = null;
+function save(){
+  if (store.ok){ store.set(KEY, JSON.stringify(S)); scheduleCloudPush(); return; }
+  if (!save._w){ save._w = true; toast("本地存储不可用，改动可能保存不住，建议换 Chrome / Edge","err"); }
+}
+function load(){
+  let raw = store.get(KEY), data = null;
+  if (raw){ try{ data = JSON.parse(raw); }catch(e){ data = null; } }
+  let out;
+  if (data && data.accounts && typeof data.accounts === "object"){
+    out = { cur: ACCOUNTS.includes(data.cur) ? data.cur : "cjy", accounts: {} };
+    ACCOUNTS.forEach(a => { out.accounts[a] = normalizeAcc(data.accounts[a], a); });
+  } else if (data && Array.isArray(data.records)){   // 旧单账号数据 → 并入 cjy
+    out = { cur:"cjy", accounts: { cjy: normalizeAcc(data, "cjy") } };
+    ACCOUNTS.forEach(a => { if (!out.accounts[a]) out.accounts[a] = blankAcc(); });
+  } else {
+    out = { cur:"cjy", accounts: {} };
+    ACCOUNTS.forEach(a => { out.accounts[a] = blankAcc(); });
+  }
+  /* 各账号旧数据已通过 normalizeAcc 并入各自「主账本」，无需额外迁移（cjy→cjy.main，lc→lc.main） */
+  /* 默认给 chenjy 账号上密码锁（000000），cjy / lc 无密码 */
+  if (!out.accounts.chenjy.pass) out.accounts.chenjy.pass = hashPwd("000000");
+  /* 清理历史示例数据（demo 标记）：保证导出从 0 条真实记录开始 */
+  ACCOUNTS.forEach(a => {
+    const acc = out.accounts[a];
+    ["main","kid"].forEach(L => {
+      if (acc.ledgers[L].records.some(r => r.demo)){
+        acc.ledgers[L].records = acc.ledgers[L].records.filter(r => !r.demo);
+        acc.ledgers[L].quickNotes = topNotesFrom(acc.ledgers[L].records);
+        out._cleaned = true;
+      }
+    });
+  });
+  return out;
+}
+
+/* =========================================================
+   区间筛选（点选：年/月/日）
+   ========================================================= */
+let range = { y:"all", m:"all", d:"all" };
+let listKw = "";
+let listCats = new Set();
+let listNotes = new Set();
+function initRange(){
+  const now = new Date();
+  range = { y:String(now.getFullYear()), m:pad(now.getMonth()+1), d:"all" };
+  if (!curAcc().records.some(inRange)) range = { y:"all", m:"all", d:"all" };
+}
+function inRange(r){
+  if (range.y !== "all" && r.date.slice(0,4) !== range.y) return false;
+  if (range.m !== "all" && r.date.slice(5,7) !== range.m) return false;
+  if (range.d !== "all" && r.date.slice(8,10) !== range.d) return false;
+  return true;
+}
+function stat(){
+  let income = 0, expense = 0, n = 0; const byCat = {};
+  curAcc().records.forEach(r => {
+    if (!inRange(r)) return;
+    n++;
+    if (r.type === "income") income += r.amount;
+    else { expense += r.amount; byCat[r.cat] = (byCat[r.cat]||0) + r.amount; }
+  });
+  return { income, expense, balance: income - expense, n, byCat };
+}
+function rangeLabel(){
+  if (range.y === "all") return "全部时间";
+  if (range.m === "all") return range.y + " 年";
+  if (range.d === "all") return `${range.y} 年 ${+range.m} 月`;
+  return `${+range.m} 月 ${+range.d} 日`;
+}
+
+/* =========================================================
+   对比（与总计/详单同一套点选区间：年/月/日）
+   ========================================================= */
+function compareGranularity(){
+  if (range.y === "all") return "year";
+  if (range.m === "all") return "month";
+  return "day";
+}
+function compareData(){
+  const g = compareGranularity();
+  const map = {};
+  curAcc().records.forEach(r => {
+    if (!inRange(r)) return;
+    const [y,m,d] = r.date.split("-").map(Number);
+    let key, label, sk;
+    if (g === "year"){ key = String(y); label = y + "年"; sk = y; }
+    else if (g === "month"){ key = String(m); label = m + "月"; sk = m; }
+    else { key = String(d); label = d + "日"; sk = d; }
+    if (!map[key]) map[key] = { label, income:0, expense:0, sk };
+    if (r.type === "income") map[key].income += r.amount;
+    else map[key].expense += r.amount;
+  });
+  return Object.values(map).sort((a,b) => a.sk - b.sk);
+}
+
+/* =========================================================
+   通用 UI
+   ========================================================= */
+function toast(msg, kind){
+  const box = $("#toast"), el = document.createElement("div");
+  el.className = "toast " + (kind || "ok");
+  el.innerHTML = `<svg class="ic"><use href="#${kind==="err"?"i-trash":"i-check"}"/></svg><span></span>`;
+  el.lastChild.textContent = msg;
+  box.appendChild(el);
+  setTimeout(() => { el.style.transition=".3s"; el.style.opacity=0; el.style.transform="translateY(8px)"; }, 1900);
+  setTimeout(() => el.remove(), 2300);
+}
+/* 保存成功提示（带"撤销"动作） */
+function showSaved(rec){
+  const c = catOf(rec.type, rec.cat);
+  const who = rec.type === "expense" && rec.target ? " · " + rec.target : "";
+  const dt = rec.date.slice(5).replace("-", "/") + (rec.time ? " " + rec.time : "");
+  const box = $("#toast"), el = document.createElement("div");
+  el.className = "toast act";
+  el.innerHTML = `<svg class="ic"><use href="#i-check"/></svg><span class="tx"></span><button class="undo" type="button">撤销</button>`;
+  el.querySelector(".tx").textContent =
+    `已保存：${rec.type === "income" ? "收入" : "支出"} · ${c.name}${who} · ${(rec.type==="income" && S.cur==="cjy") ? "*****" : money(rec.amount)} · ${dt}`;
+  el.querySelector(".undo").onclick = () => {
+    curAcc().records = curAcc().records.filter(x => x.id !== rec.id);
+    save();
+    renderQuickNotes(); renderFiltPills(); renderTotal(); renderList(); renderCmp();
+    if (el.isConnected) el.remove();
+    toast("已撤销刚才的保存");
+  };
+  box.appendChild(el);
+  setTimeout(() => { if (el.isConnected){ el.style.transition=".3s"; el.style.opacity=0; el.style.transform="translateY(8px)"; setTimeout(() => el.remove(), 300); } }, 4500);
+}
+function empty(msg){ return `<div class="empty"><svg class="ic"><use href="#i-list"/></svg>${esc(msg)}</div>`; }
+
+const NAMES = { add:["记一笔",""], cmp:["收支对比","年/月/日趋势"], total:["总计","区间汇总"], list:["详单","区间明细"] };
+let tab = "add";
+function go(t){
+  tab = t;
+  $$(".page").forEach(p => p.classList.remove("on"));
+  $("#p-" + t).classList.add("on");
+  $$(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  $("#navTitle").textContent = NAMES[t][0];
+  $("#navSub").textContent = t === "add" ? ("账号 " + S.cur) : NAMES[t][1];
+  if (t === "cmp") renderCmp();
+  if (t === "total") renderTotal();
+  if (t === "list"){ renderFiltPills(); renderList(); }
+}
+
+/* =========================================================
+   页 1 · 记账
+   ========================================================= */
+let aType = "expense", aCat = "food", aTarget = "个人";
+
+function renderCats(){
+  const list = aType === "expense" ? CATS.expense : (CATS.income[S.cur] || CATS.income.cjy);
+  if (!list.some(c => c.id === aCat)) aCat = list[0].id;
+  $("#catGrid").innerHTML = list.map(c =>
+    `<button data-c="${c.id}" class="${c.id===aCat?"on":""}"><svg class="ic"><use href="#${c.ic}"/></svg><span>${c.name}</span></button>`
+  ).join("");
+}
+function renderTargets(){
+  const ts = targetsOf(S.cur);
+  if (ts.list.indexOf(aTarget) < 0) aTarget = ts.def;   // 切账号后回落到该账号默认
+  $("#objChips").innerHTML = ts.list.map(t =>
+    `<button data-t="${t}" class="${t===aTarget?"on":""}">${t}</button>`).join("");
+}
+function showObj(){ $("#objWrap").style.display = aType === "expense" ? "" : "none"; }
+function renderAcctChips(){
+  const html = ACCOUNTS.map(a =>
+    `<button data-ac="${a}" class="${a===S.cur?"on":""}">${ACC_DISPLAY[a]||a}${S.accounts[a].pass?" 🔒":""}</button>`).join("");
+  $$(".acctchips").forEach(el => el.innerHTML = html);
+}
+function renderLedgerChips(){
+  const cur = curLedgerName();
+  const html = [
+    `<button data-led="main" class="${cur==="main"?"on":""}">主账本</button>`,
+    `<button data-led="kid" class="${cur==="kid"?"on":""}">亲子账本</button>`
+  ].join("");
+  $$(".ledgerchips").forEach(el => el.innerHTML = html);
+}
+
+function topNotes(){ return topNotesFrom(curAcc().records); }
+function renderQuickNotes(){
+  const box = $("#quickNotes");
+  box.innerHTML = curAcc().quickNotes.map(n =>
+    `<span class="qn" data-n="${esc(n)}">${esc(n)}<span class="x" data-x="1" aria-label="删除">×</span></span>`).join("")
+    + `<span class="qn add" data-add="1"><svg class="ic"><use href="#i-plus"/></svg>添加</span>`;
+}
+function addNote(v){
+  v = (v||"").trim().slice(0, 24);
+  if (!v || curAcc().quickNotes.indexOf(v) >= 0){ renderQuickNotes(); return; }
+  curAcc().quickNotes.push(v);
+  if (curAcc().quickNotes.length > 20) curAcc().quickNotes.shift();
+  save(); renderQuickNotes();
+}
+function removeNote(v){
+  curAcc().quickNotes = curAcc().quickNotes.filter(x => x !== v);
+  save(); renderQuickNotes();
+}
+function startAddNote(){
+  const box = $("#quickNotes");
+  box.innerHTML = `<input class="qn-in" id="addNoteIn" maxlength="24" placeholder="输入快捷备注，回车添加">`;
+  const inp = $("#addNoteIn");
+  inp.focus();
+  let done = false;
+  const commit = () => {
+    if (done) return; done = true;
+    const v = inp.value.trim();
+    if (v) addNote(v); else renderQuickNotes();
+  };
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Enter"){ e.preventDefault(); commit(); }
+    else if (e.key === "Escape"){ done = true; renderQuickNotes(); }
+  });
+  inp.addEventListener("blur", commit);
+}
+
+function saveRecord(){
+  const amt = num($("#amtIn").value, 0);
+  if (!(amt > 0)){ toast("先输入一个金额","err"); $("#amtIn").focus(); return; }
+  const dIn = $("#addDate").value, tIn = $("#addTime").value;
+  const date = normalizeDate(dIn) || iso(new Date());
+  const time = normTime(tIn) || hhmm(new Date());
+  const now = new Date(), c = catOf(aType, aCat);
+  const note = $("#note").value.trim();
+  const rec = {
+    id: uid(), date, time, type: aType, amount: amt, cat: aCat,
+    target: aType === "expense" ? aTarget : "", note, demo: false
+  };
+  curAcc().records.push(rec); save();
+  if (note && curAcc().quickNotes.indexOf(note) < 0){
+    curAcc().quickNotes.push(note);
+    if (curAcc().quickNotes.length > 20) curAcc().quickNotes.shift();
+  }
+  showSaved(rec);
+  $("#amtIn").value = ""; $("#note").value = "";
+  $("#amtIn").focus();
+  save(); renderQuickNotes(); renderTotal(); renderList(); renderCmp();
+}
+
+/* =========================================================
+   页 2 · 对比
+   ========================================================= */
+function cmpLine(val, maxV, color, inc){
+  const pct = maxV > 0 ? Math.max(2, val/maxV*100) : 0;
+  const txt = (inc?"+":"−") + money0(val);
+  const shown = (inc && S.cur==="cjy")
+    ? `<span class="ink-mask" data-real="${esc(txt)}" role="button" tabindex="0" title="点击查看收入">*****</span>`
+    : txt;
+  return `<div class="cmp-line">
+    <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
+    <span class="cmp-v ${inc?"pos":"neg"}">${shown}</span>
+  </div>`;
+}
+function renderCmp(){
+  const g = compareGranularity();
+  const data = compareData();
+  /* 年度对比：收入 + 支出；月度 / 日度对比：只显示支出 */
+  const showIncome = (g === "year");
+  const unitTxt = g==="year" ? "按年对比" : g==="month" ? "按月对比" : "按日对比";
+  $("#cmpUnit").textContent = unitTxt + (showIncome ? " · 收/支" : " · 仅支出");
+  if (!data.length){ $("#cmpBars").innerHTML = empty("这个区间还没有记录"); return; }
+  const maxV = Math.max(1, ...data.flatMap(b => showIncome ? [b.income, b.expense] : [b.expense]));
+  $("#cmpBars").innerHTML = data.map(b => `
+    <div class="cmp-row">
+      <div class="cmp-lab">${esc(b.label)}</div>
+      <div class="cmp-bars">
+        ${showIncome ? cmpLine(b.income, maxV, "#4FA98C", true) : ""}
+        ${cmpLine(b.expense, maxV, "#E08A85", false)}
+      </div>
+    </div>`).join("");
+}
+
+/* =========================================================
+   页 3 · 总计
+   ========================================================= */
+function barRow(name, ic, val, max, pct, color, note){
+  return `<div class="bar-row">
+    <div class="top">
+      <div class="nm">${ic?`<svg class="ic"><use href="#${ic}"/></svg>`:""}<span>${esc(name)}</span></div>
+      <div class="vv">${money0(val)}${note?`<em>${note}</em>`:""}</div>
+    </div>
+    <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
+  </div>`;
+}
+function renderTotal(){
+  const s = stat(), maxIE = Math.max(s.income, s.expense, 1);
+  $("#sIn").innerHTML     = inkMask(money0(s.income));
+  $("#sOut").textContent  = money0(s.expense);
+  $("#sBal").innerHTML    = inkMask(money0(s.balance));
+  $("#sBal").className = "v num " + (s.balance >= 0 ? "pos" : "neg");
+  $("#catTag").textContent = s.n ? `${s.n} 笔` : "—";
+
+  const entries = Object.entries(s.byCat).sort((a,b) => b[1]-a[1]);
+  if (!entries.length){
+    $("#catBars").innerHTML = empty("这个区间还没有支出");
+    return;
+  }
+  const maxC = entries[0][1];
+  $("#catBars").innerHTML = entries.slice(0, 10).map(([id, v]) => {
+    const cc = catOf("expense", id);
+    return barRow(cc.name, cc.ic, v, maxC, v/maxC*100, "#8FD6BE",
+      `占支出 ${Math.round(v/Math.max(1,s.expense)*100)}%`);
+  }).join("");
+}
+
+/* =========================================================
+   页 4 · 详单
+   ========================================================= */
+function renderFiltPills(){
+  const cats = CATS.expense;
+  $("#fCatPills").innerHTML =
+    `<span class="fpill all ${listCats.size===0?"on":""}" data-cat="__all__">全部</span>` +
+    cats.map(c => `<span class="fpill ${listCats.has(c.id)?"on":""}" data-cat="${c.id}">${c.name}</span>`).join("");
+
+  const notes = topFilterNotes();
+  $("#fNotePills").innerHTML =
+    `<span class="fpill all ${listNotes.size===0?"on":""}" data-note="__all__">全部</span>` +
+    (notes.length
+      ? notes.map(n =>
+          `<span class="fpill ${listNotes.has(n)?"on":""}" data-note="${esc(n)}">${esc(n)}<span class="px" data-del-note="${esc(n)}" aria-label="删除">×</span></span>`
+        ).join("")
+      : `<span class="fp-none">暂无高频词</span>`);
+}
+/* 高频词：按记录中出现频次从高到低，最多 8 个（只保留真实出现过的） */
+const NOTE_PILL_MAX = 8;
+function noteFreq(){
+  const cnt = {};
+  curAcc().records.forEach(r => { const n = (r.note||"").trim(); if (n) cnt[n] = (cnt[n]||0) + 1; });
+  return cnt;
+}
+function topFilterNotes(){
+  const cnt = noteFreq();
+  return curAcc().quickNotes.filter(n => cnt[n] > 0).sort((a,b) => cnt[b] - cnt[a]).slice(0, NOTE_PILL_MAX);
+}
+function renderList(){
+  let rs = curAcc().records.filter(inRange).sort((a,b) =>
+    (b.date + (b.time||"")).localeCompare(a.date + (a.time||"")));
+  if (listKw){
+    rs = rs.filter(r => {
+      const hay = (r.note + " " + catOf(r.type, r.cat).name + " " + (r.target||"") + " " + r.date).toLowerCase();
+      return hay.indexOf(listKw) >= 0;
+    });
+  }
+  if (listCats.size) rs = rs.filter(r => r.type === "expense" && listCats.has(r.cat));
+  if (listNotes.size) rs = rs.filter(r => listNotes.has((r.note||"").trim()));
+
+  let inc = 0, exp = 0;
+  rs.forEach(r => { if (r.type === "income") inc += r.amount; else exp += r.amount; });
+  $("#listSum").innerHTML = `
+    <div><div class="k">收入</div><div class="v pos">${inkMask(money0(inc))}</div></div>
+    <div><div class="k">支出</div><div class="v out">${money0(exp)}</div></div>
+    <div><div class="k">净额</div><div class="v ${inc-exp>=0?"pos":""}">${inkMask(money0(inc-exp))}</div></div>`;
+
+  if (!rs.length){
+    $("#recList").innerHTML = empty(listKw ? "没有匹配「" + listKw + "」的记录" : "这个区间还没有记录");
+    return;
+  }
+  $("#recList").innerHTML = rs.map(r => {
+    const c = catOf(r.type, r.cat), inc = r.type === "income";
+    const obj = inc ? `<span class="mut">收入</span>`
+                    : (r.target ? `<span class="flag f-obj">${esc(r.target)}</span>` : "");
+    return `<div class="rec" data-edit="${r.id}">
+      <div class="ci ${inc?"inc":""}"><svg class="ic"><use href="#${c.ic}"/></svg></div>
+      <div class="bd">
+        <div class="l1"><span class="cn">${c.name}</span><span class="nt">${esc(r.note||"—")}</span></div>
+        <div class="l2">
+          <span>${r.date.slice(5).replace("-","/")} ${r.time||""}</span>
+          ${obj}
+        </div>
+      </div>
+      <div class="rr"><div class="am ${inc?"pos":""}">${inc
+        ? (S.cur==="cjy"
+            ? `<span class="ink-mask" data-real="${esc("+"+money(r.amount))}" role="button" tabindex="0" title="点击查看收入">+*****</span>`
+            : "+"+money(r.amount))
+        : "−"+money(r.amount)}</div></div>
+      <button class="del edit" data-edit="${r.id}" aria-label="修改"><svg class="ic"><use href="#i-edit"/></svg></button>
+      <button class="del" data-del="${r.id}" aria-label="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
+    </div>`;
+  }).join("");
+}
+
+/* =========================================================
+   详单记录编辑（点记录即可修改）
+   ========================================================= */
+let editing = null;   // { id, type, cat, target }
+function openEdit(id){
+  const r = curAcc().records.find(x => x.id === id);
+  if (!r) return;
+  editing = {
+    id: r.id, type: r.type, cat: r.cat,
+    target: r.target || targetsOf(S.cur).def
+  };
+  $("#eAmt").value  = r.amount;
+  $("#eNote").value = r.note || "";
+  $("#eDate").value = r.date;
+  $("#eTime").value = r.time || "";
+  $("#eWho").textContent = r.date + (r.time ? " " + r.time : "");
+  renderEditForm();
+  $("#editSheet").classList.add("on");
+  $("#sheetMask").classList.add("on");
+}
+function closeEdit(){
+  editing = null;
+  $("#editSheet").classList.remove("on");
+  $("#sheetMask").classList.remove("on");
+}
+function renderEditForm(){
+  if (!editing) return;
+  const isExp = editing.type === "expense";
+  $("#eExpense").classList.toggle("on", isExp);
+  $("#eIncome").classList.toggle("on", !isExp);
+  $("#eObjWrap").style.display = isExp ? "" : "none";
+
+  const list = isExp ? CATS.expense : (CATS.income[S.cur] || CATS.income.cjy);
+  if (!list.some(c => c.id === editing.cat)) editing.cat = list[0].id;
+  $("#eCatGrid").innerHTML = list.map(c =>
+    `<button data-c="${c.id}" class="${c.id===editing.cat?"on":""}"><svg class="ic"><use href="#${c.ic}"/></svg><span>${c.name}</span></button>`
+  ).join("");
+
+  const ts = targetsOf(S.cur);
+  if (ts.list.indexOf(editing.target) < 0) editing.target = ts.def;
+  $("#eObjChips").innerHTML = ts.list.map(t =>
+    `<button data-t="${t}" class="${t===editing.target?"on":""}">${t}</button>`).join("");
+}
+function saveEdit(){
+  if (!editing) return;
+  const r = curAcc().records.find(x => x.id === editing.id);
+  if (!r){ closeEdit(); return; }
+  const amt = num($("#eAmt").value, 0);
+  if (!(amt > 0)){ toast("金额要大于 0","err"); $("#eAmt").focus(); return; }
+  const d = $("#eDate").value;
+  if (!d){ toast("请选择日期","err"); return; }
+  r.type   = editing.type;
+  r.cat    = editing.cat;
+  r.amount = Math.round(amt * 100) / 100;
+  r.target = editing.type === "expense" ? editing.target : "";
+  r.note   = $("#eNote").value.trim();
+  r.date   = d;
+  r.time   = $("#eTime").value || "";
+  r.demo   = false;
+  save();
+  closeEdit();
+  renderFiltPills(); renderTotal(); renderList(); renderCmp();
+  toast("已保存修改");
+}
+function deleteEditing(){
+  if (!editing) return;
+  const r = curAcc().records.find(x => x.id === editing.id);
+  if (!r) return;
+  if (!confirm("删除这笔记录？删除后无法恢复。")) return;
+  curAcc().records = curAcc().records.filter(x => x.id !== editing.id);
+  save();
+  closeEdit();
+  renderFiltPills(); renderTotal(); renderList(); renderCmp();
+  toast("已删除");
+}
+
+/* =========================================================
+   区间选择器（点选）
+   ========================================================= */
+function buildPointRange(){
+  const years = ["all"];
+  const set = new Set(curAcc().records.map(r => r.date.slice(0,4)));
+  for (let y = 2026; y <= 2035; y++) years.push(String(y));
+  set.forEach(y => { if (years.indexOf(y) < 0) years.push(y); });
+  years.sort((a,b) => a === "all" ? -1 : b === "all" ? 1 : a - b);
+
+  ["#selY","#selY2","#cmpY"].forEach(sel => {
+    $(sel).innerHTML = years.map(y =>
+      `<option value="${y}" ${y===range.y?"selected":""}>${y==="all"?"全部年份":y+" 年"}</option>`).join("");
+  });
+  const mm = [`<option value="all" ${range.m==="all"?"selected":""}>全年</option>`];
+  for (let m = 1; m <= 12; m++) mm.push(`<option value="${pad(m)}" ${range.m===pad(m)?"selected":""}>${m} 月</option>`);
+  ["#selM","#selM2","#cmpM"].forEach(sel => { $(sel).innerHTML = mm.join(""); $(sel).disabled = range.y === "all"; });
+
+  const dd = [`<option value="all" ${range.d==="all"?"selected":""}>整月</option>`];
+  for (let d = 1; d <= 31; d++) dd.push(`<option value="${pad(d)}" ${range.d===pad(d)?"selected":""}>${d} 日</option>`);
+  ["#selD","#selD2","#cmpD"].forEach(sel => { $(sel).innerHTML = dd.join(""); $(sel).disabled = range.m === "all"; });
+}
+function syncPointRange(){
+  ["#selY","#selY2","#cmpY"].forEach(s => $(s).value = range.y);
+  ["#selM","#selM2","#cmpM"].forEach(s => { $(s).value = range.m; $(s).disabled = range.y === "all"; });
+  ["#selD","#selD2","#cmpD"].forEach(s => { $(s).value = range.d; $(s).disabled = range.m === "all"; });
+}
+["#selY","#selY2","#cmpY"].forEach(s => $(s).addEventListener("change", e => {
+  range.y = e.target.value;
+  if (range.y === "all"){ range.m = "all"; range.d = "all"; }
+  syncPointRange(); renderCmp(); renderTotal(); renderList();
+}));
+["#selM","#selM2","#cmpM"].forEach(s => $(s).addEventListener("change", e => {
+  range.m = e.target.value;
+  if (range.m === "all") range.d = "all";
+  syncPointRange(); renderCmp(); renderTotal(); renderList();
+}));
+["#selD","#selD2","#cmpD"].forEach(s => $(s).addEventListener("change", e => {
+  range.d = e.target.value;
+  syncPointRange(); renderCmp(); renderTotal(); renderList();
+}));
+
+/* =========================================================
+   事件绑定
+   ========================================================= */
+$("#tExpense").onclick = () => { aType = "expense"; $("#tExpense").classList.add("on"); $("#tIncome").classList.remove("on"); renderCats(); showObj(); };
+$("#tIncome").onclick  = () => { aType = "income";  $("#tIncome").classList.add("on");  $("#tExpense").classList.remove("on"); renderCats(); showObj(); };
+
+$("#catGrid").onclick = e => {
+  const b = e.target.closest("[data-c]"); if (!b) return;
+  aCat = b.dataset.c; renderCats();
+};
+$("#objChips").onclick = e => {
+  const b = e.target.closest("[data-t]"); if (!b) return;
+  aTarget = b.dataset.t; renderTargets();
+};
+const _unlocked = {};   // 会话内已解锁的密码账号，避免反复输密码
+$$(".acctchips").forEach(el => el.onclick = e => {
+  const b = e.target.closest("[data-ac]"); if (!b) return;
+  const ac = b.dataset.ac; if (ac === S.cur) return;
+  const hp = S.accounts[ac].pass;
+  if (hp && !_unlocked[ac]){
+    const p = prompt("「" + (ACC_DISPLAY[ac]||ac) + "」需要密码才能打开：");
+    if (p === null) return;                       // 取消
+    if (hashPwd(p) !== hp){ toast("密码错误", "err"); return; }
+    _unlocked[ac] = true;
+  }
+  S.cur = ac; save();
+  renderAcctChips(); renderLedgerChips();
+  renderCats();                                  // 收入分类随账号切换
+  renderTargets();                               // 支出对象随账号切换
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills();
+  renderTotal(); renderList(); renderCmp();
+  toast("已切换到账号 " + ac + "，数据独立");
+});
+$$(".ledgerchips").forEach(el => el.onclick = e => {
+  const b = e.target.closest("[data-led]"); if (!b) return;
+  const L = b.dataset.led; if (L === curLedgerName()) return;
+  setLedger(L); save();
+  renderLedgerChips();
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills();
+  renderTotal(); renderList(); renderCmp();
+  toast(L === "kid" ? "已切到亲子账本" : "已切到主账本");
+});
+$("#quickNotes").onclick = e => {
+  const addBtn = e.target.closest("[data-add]");
+  if (addBtn){ startAddNote(); return; }
+  const x = e.target.closest("[data-x]");
+  if (x){ const chip = x.closest("[data-n]"); if (chip) removeNote(chip.dataset.n); return; }
+  const chip = e.target.closest("[data-n]");
+  if (chip){ $("#note").value = chip.dataset.n; $("#note").focus(); }
+};
+$("#listKw").addEventListener("input", e => { listKw = e.target.value.trim().toLowerCase(); renderList(); });
+$("#fCatPills").onclick = e => {
+  const p = e.target.closest("[data-cat]"); if (!p) return;
+  const v = p.dataset.cat;
+  if (v === "__all__") listCats.clear();
+  else { listCats.has(v) ? listCats.delete(v) : listCats.add(v); }
+  renderFiltPills(); renderList();
+};
+$("#fNotePills").onclick = e => {
+  const del = e.target.closest("[data-del-note]");
+  if (del){                                   // 删掉这个高频词（同时移除记账页的快捷备注）
+    e.stopPropagation();
+    const v = del.dataset.delNote;
+    removeNote(v);
+    listNotes.delete(v);
+    renderFiltPills(); renderList();
+    toast("已移除高频词「" + v + "」");
+    return;
+  }
+  const p = e.target.closest("[data-note]"); if (!p) return;
+  const v = p.dataset.note;
+  if (v === "__all__") listNotes.clear();
+  else { listNotes.has(v) ? listNotes.delete(v) : listNotes.add(v); }
+  renderFiltPills(); renderList();
+};
+$("#saveBtn").onclick = saveRecord;
+
+$$(".tabs button").forEach(b => b.onclick = () => go(b.dataset.tab));
+
+$("#recList").onclick = e => {
+  const del = e.target.closest("[data-del]");
+  if (del){
+    const id = del.dataset.del, r = curAcc().records.find(x => x.id === id); if (!r) return;
+    const c = catOf(r.type, r.cat);
+    if (!confirm(`删除「${c.name} ${money(r.amount)}」？删除后无法恢复。`)) return;
+    curAcc().records = curAcc().records.filter(x => x.id !== id);
+    save(); renderFiltPills(); renderCmp(); renderTotal(); renderList(); toast("已删除");
+    return;
+  }
+  const row = e.target.closest("[data-edit]");
+  if (row) openEdit(row.dataset.edit);
+};
+
+/* 收入遮罩：点击 ***** 切换显示/隐藏（捕获阶段，避免触发记录编辑） */
+document.addEventListener("click", e => {
+  const m = e.target.closest(".ink-mask");
+  if (!m) return;
+  e.preventDefault(); e.stopPropagation();
+  const revealed = m.classList.toggle("revealed");
+  m.textContent = revealed ? m.dataset.real : "*****";
+}, true);
+
+/* ---- 编辑弹层事件 ---- */
+$("#eClose").onclick  = closeEdit;
+$("#eCancel").onclick = closeEdit;
+$("#sheetMask").onclick = closeEdit;
+$("#eSave").onclick   = saveEdit;
+$("#eDel").onclick    = deleteEditing;
+$("#eExpense").onclick = () => { if (!editing) return; editing.type = "expense"; renderEditForm(); };
+$("#eIncome").onclick  = () => { if (!editing) return; editing.type = "income";  renderEditForm(); };
+$("#eCatGrid").onclick = e => {
+  const b = e.target.closest("[data-c]"); if (!b || !editing) return;
+  editing.cat = b.dataset.c; renderEditForm();
+};
+$("#eObjChips").onclick = e => {
+  const b = e.target.closest("[data-t]"); if (!b || !editing) return;
+  editing.target = b.dataset.t; renderEditForm();
+};
+
+/* =========================================================
+   云同步（GitHub Gist，纯前端，无需后端）
+   与「错题本 / 作业清单」同一套云端布局：
+   本机账户密码登录 + GitHub Token + Gist 存数据 + 自动备份
+   ========================================================= */
+const GIST_API  = "https://api.github.com/gists";
+const APP_TAG   = "打工人小账本数据同步";
+/* 每个账号独立一个 Gist（文件名含账号 id），实现「不同账号同步不同云端」 */
+const gistFileName = ac => "xiaozhangben-" + ac + ".json";
+
+/* ---------- 本机账户（密码只做本机混淆，不同步、不上传） ---------- */
+function hashPwd(p){
+  let h = 5381; const s = "dgr::" + p;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return "h" + h.toString(36);
+}
+/* 云同步已并入各账号（S.accounts[ac].cloud），不再有独立的「云账户」登录系统 */
+
+/* 当前账号（S.cur）的云端配置 { token, gistId, autoSync, lastSync } */
+function getCloud(){
+  const a = S.accounts[S.cur];
+  return Object.assign({ token:"", gistId:"", autoSync:true, lastSync:0 }, a.cloud || {});
+}
+function setCloud(patch){
+  const a = S.accounts[S.cur];
+  a.cloud = Object.assign({}, a.cloud || {}, patch);
+  save();
+}
+
+/* ---------- 快照 / 导入（仅当前账号，按账号分 Gist） ---------- */
+/* 快照只含「当前账号」的账本数据（cur + ledgers），不含密码与 Token（不上云） */
+function snapshot(){
+  const a = S.accounts[S.cur];
+  return { app: "xiaozhangben", version: 2, exportedAt: new Date().toISOString(),
+           account: S.cur, cur: a.cur, ledgers: a.ledgers };
+}
+/* 从云端恢复当前账号的账本；保留本机密码锁与云端配置 */
+function importSnapshot(data){
+  if (!data || !data.ledgers) throw new Error("云端数据格式不正确");
+  const ac = data.account || S.cur;
+  if (!S.accounts[ac]) S.accounts[ac] = blankAcc();
+  const prev = S.accounts[ac];
+  const norm = normalizeAcc({ cur: data.cur, ledgers: data.ledgers }, ac);
+  norm.pass = prev.pass;     // 保留本机密码锁
+  norm.cloud = prev.cloud;   // 保留本机云端配置
+  S.accounts[ac] = norm;
+  save(); renderAll();
+}
+
+/* ---------- Gist 接口 ---------- */
+function gistHeaders(){
+  const t = (getCloud().token || "").trim();
+  const auth = t.indexOf("github_pat_") === 0 ? "Bearer " + t : "token " + t;
+  return { "Authorization": auth, "Content-Type": "application/json", "Accept": "application/vnd.github+json" };
+}
+function normGistId(raw){ return (raw || "").trim().split("/").pop() || ""; }
+function errMsg(status, msg, act){
+  if (status === 401 || status === 403) return act + "失败：Token 无效或权限不足（请生成只勾 gist 权限的 Token）";
+  if (status === 404) return act + "失败：Gist 不可见，多半是 Token 无效/无 gist 权限，或 Gist ID 填错";
+  return act + "失败（HTTP " + status + (msg ? "：" + msg : "") + "）";
+}
+function needCloud(){
+  const c = getCloud();
+  if (!c.token) throw new Error("还没填 GitHub Token");
+  if (!c.gistId) throw new Error("还没有 Gist，请点「自动创建 Gist」或填写已有 Gist ID");
+  return c;
+}
+/* 新建一个私密 Gist 存数据 */
+async function gistCreate(){
+  const c = getCloud();
+  if (!c.token) throw new Error("请先填 GitHub Token");
+  const r = await fetch(GIST_API, {
+    method: "POST", headers: gistHeaders(),
+    body: JSON.stringify({ description: APP_TAG, public: false,
+      files: { [gistFileName(S.cur)]: { content: JSON.stringify(snapshot(), null, 2) } } })
+  });
+  if (!r.ok){ const j = await r.json().catch(() => ({})); throw new Error(errMsg(r.status, j.message, "创建 Gist")); }
+  const g = await r.json();
+  setCloud({ gistId: g.id, lastSync: Date.now(), autoSync: true });
+  return g;
+}
+async function gistUpload(){
+  const c = needCloud(), id = normGistId(c.gistId);
+  const r = await fetch(GIST_API + "/" + id, {
+    method: "PATCH", headers: gistHeaders(),
+    body: JSON.stringify({ description: APP_TAG,
+      files: { [gistFileName(S.cur)]: { content: JSON.stringify(snapshot(), null, 2) } } })
+  });
+  if (!r.ok){ const j = await r.json().catch(() => ({})); throw new Error(errMsg(r.status, j.message, "上传")); }
+  setCloud({ lastSync: Date.now() });
+  return true;
+}
+async function gistDownload(){
+  const c = needCloud(), id = normGistId(c.gistId);
+  const r = await fetch(GIST_API + "/" + id, { headers: gistHeaders() });
+  if (!r.ok){ const j = await r.json().catch(() => ({})); throw new Error(errMsg(r.status, j.message, "下载")); }
+  const g = await r.json();
+  const f = g.files && g.files[gistFileName(S.cur)];
+  if (!f || !f.content) throw new Error("Gist 里没有找到 " + gistFileName(S.cur));
+  _importing = true;
+  try { importSnapshot(JSON.parse(f.content)); } finally { _importing = false; }
+  setCloud({ lastSync: Date.now() });
+  return true;
+}
+async function gistTest(){
+  const c = getCloud();
+  if (!c.token) throw new Error("请先填 GitHub Token");
+  const u = await fetch("https://api.github.com/user", { headers: gistHeaders() });
+  if (!u.ok){ const j = await u.json().catch(() => ({}));
+    throw new Error("Token 无效或权限不足（" + (j.message || "HTTP " + u.status) + "）"); }
+  const me = await u.json();
+  let gistMsg = "尚未创建 Gist";
+  if (c.gistId){
+    const g = await fetch(GIST_API + "/" + normGistId(c.gistId), { headers: gistHeaders() });
+    gistMsg = g.ok ? "Gist 可访问 ✓" : (g.status === 404 ? "Gist 不可见：Token 无权访问或 ID 填错" : "Gist 检测 HTTP " + g.status);
+  }
+  return { login: me.login, gist: gistMsg };
+}
+
+/* 用 Token 列出自己的 Gist，找出存着本账本文件的那个（换设备时自动找回） */
+async function gistFind(){
+  const c = getCloud();
+  if (!c.token) throw new Error("请先填 GitHub Token");
+  const r = await fetch("https://api.github.com/gists?per_page=100", { headers: gistHeaders() });
+  if (!r.ok){ const j = await r.json().catch(() => ({})); throw new Error(errMsg(r.status, j.message, "查找")); }
+  const list = await r.json();
+  const hit = (list || []).find(g => g.files && g.files[gistFileName(S.cur)]);
+  return hit || null;
+}
+
+/* ---------- 自动同步（改动后自动上传） ---------- */
+let _autoTimer = null, _importing = false;
+function scheduleAutoSync(){
+  const c = getCloud();
+  if (!c.autoSync || !c.token || !c.gistId || _importing) return;
+  clearTimeout(_autoTimer);
+  _autoTimer = setTimeout(async () => {
+    try{ await gistUpload(); renderAccountBox(); }catch(e){ console.warn("自动上传失败", e.message); }
+  }, 1500);
+}
+const scheduleCloudPush = scheduleAutoSync;   // 兼容 save() 里的调用
+
+/* ---------- 登录弹层 ---------- */
+function injectLogin(){
+  if ($("#loginMask")) return;
+  const m = document.createElement("div");
+  m.id = "loginMask"; m.className = "sheetmask";
+  m.innerHTML = `<div class="sheet" id="loginBody"></div>`;
+  document.body.appendChild(m);
+}
+/* 账号登陆（云端同步）：选账号即同步该账号各自独立的云端数据；带 🔒 的账号需密码 */
+function openLogin(){
+  injectLogin();
+  const rows = ACCOUNTS.map(ac => {
+    const a = S.accounts[ac];
+    const locked = !!a.pass;
+    return `<div class="crow acc-pick" data-ac="${ac}" style="cursor:pointer">
+      <span class="lb">${esc(ACC_DISPLAY[ac]||ac)}${locked?" 🔒":""}</span>
+      <span class="vl">${ac===S.cur?"当前 ✓":"切换 ›"}</span></div>`;
+  }).join("");
+  $("#loginBody").innerHTML = `
+    <div class="sh-head"><b>账号登陆（云端同步）</b><button class="cx" id="loginX" aria-label="关闭">×</button></div>
+    <div style="padding:0 2px 4px">
+      <div class="mig-tip">选一个账号登录，即同步该账号各自的云端数据（每个账号独立备份，互不影响）。带 🔒 的账号需要密码。</div>
+      ${rows}
+      <div class="mig-tip">登录后可在设置里「修改云端配置」填 Token，开启自动备份。</div>
+    </div>`;
+  $("#loginX").onclick = () => closeLogin();
+  $$("#loginBody .acc-pick").forEach(el => el.onclick = () => {
+    const ac = el.dataset.ac;
+    const hp = S.accounts[ac].pass;
+    if (hp && !_unlocked[ac]){
+      const p = prompt("「" + (ACC_DISPLAY[ac]||ac) + "」需要密码：");
+      if (p === null) return;
+      if (hashPwd(p) !== hp){ toast("密码错误", "err"); return; }
+      _unlocked[ac] = true;
+    }
+    S.cur = ac; save();
+    closeLogin();
+    renderAcctChips(); renderLedgerChips();
+    renderCats(); renderTargets();
+    initRange(); buildPointRange(); syncPointRange();
+    renderQuickNotes(); renderFiltPills();
+    renderTotal(); renderList(); renderCmp(); renderAccountBox();
+    afterLogin();
+    toast("已登录账号 " + ac);
+  });
+  $("#loginMask").classList.add("on");
+}
+function closeLogin(){ const m = $("#loginMask"); if (m) m.classList.remove("on"); }
+
+/* 登录/切换后：有云端配置就同步当前账号各自的 Gist；没配置就不同步 */
+async function afterLogin(){
+  renderAccountBox();
+  const c = getCloud();
+  if (!c.token || !c.gistId) return;            // 没配置云端 → 仅本地记账
+  if (c.autoSync){
+    try{ await gistDownload(); toast("已从云端同步 ✓"); }
+    catch(e){ try{ await gistUpload(); }catch(e2){ console.warn("云端同步失败", e.message); } }
+  }
+  renderAll(); renderAccountBox();
+}
+
+/* ---------- 云端配置引导（Token 只填一次，仅存本机） ---------- */
+function injectGuide(){
+  if ($("#guideMask")) return;
+  const m = document.createElement("div");
+  m.id = "guideMask"; m.className = "sheetmask";
+  m.innerHTML = `<div class="sheet" id="guideBody"></div>`;
+  document.body.appendChild(m);
+}
+function openCloudGuide(){
+  injectGuide();
+  const c = getCloud();
+  $("#guideBody").innerHTML = `
+    <div class="sh-head"><b>配置云端备份</b><button class="cx" id="guideX" aria-label="关闭">×</button></div>
+    <div style="padding:0 2px 4px">
+      <div class="mig-tip">粘贴一个<b>只勾 gist 权限</b>的 GitHub Token 即可。Token 只存在这台设备上，不会上传给别人。点「自动创建 Gist」会为你新建一个<b>私密</b> Gist 存放数据。</div>
+      <input class="set-inp" id="guideToken" type="password" placeholder="GitHub Token（ghp_ 或 github_pat_ 开头）" value="${esc(c.token || "")}" autocomplete="off">
+      <input class="set-inp" id="guideGist" type="text" placeholder="已有 Gist ID（可留空，点下面自动创建）" value="${esc(c.gistId || "")}" autocomplete="off">
+      <label class="chkline"><input type="checkbox" id="guideAuto" ${c.autoSync ? "checked" : ""}> 自动同步（任何改动自动备份）</label>
+      <div class="sync-btns">
+        <button class="migbtn exp" id="guideCreate">自动创建 Gist</button>
+        <button class="migbtn imp" id="guideFind">查找已有备份</button>
+      </div>
+      <div class="sync-btns"><button class="migbtn" id="guideTest">测试连接</button></div>
+      <div class="sync-btns"><button class="migbtn imp" id="guideSave">保存并开始备份</button></div>
+      <div class="sync-status" id="guideMsg"></div>
+    </div>`;
+  const msg = t => { $("#guideMsg").textContent = t; };
+  const grab = () => setCloud({ token: $("#guideToken").value.trim(), gistId: $("#guideGist").value.trim() });
+  $("#guideX").onclick = () => { $("#guideMask").classList.remove("on"); renderAccountBox(); };
+  $("#guideTest").onclick = async () => {
+    grab(); msg("测试中…");
+    try{ const r = await gistTest(); msg(`Token 有效（GitHub 用户 ${r.login}）；${r.gist}`); }
+    catch(e){ msg(e.message); }
+  };
+  $("#guideCreate").onclick = async () => {
+    grab(); msg("创建中…");
+    try{ const g = await gistCreate(); $("#guideGist").value = g.id; msg("已创建私密 Gist ✓  ID：" + g.id); renderAccountBox(); }
+    catch(e){ msg(e.message); }
+  };
+  $("#guideFind").onclick = async () => {
+    grab(); msg("查找中…");
+    try{
+      const g = await gistFind();
+      if (!g){ msg("没找到已有备份，可点「自动创建 Gist」新建"); return; }
+      $("#guideGist").value = g.id; setCloud({ gistId: g.id });
+      msg("找到已有备份 ✓  ID：" + g.id); renderAccountBox();
+    }catch(e){ msg(e.message); }
+  };
+  $("#guideSave").onclick = () => {
+    const t = $("#guideToken").value.trim();
+    if (!t){ msg("请先填 Token"); return; }
+    setCloud({ token: t, gistId: $("#guideGist").value.trim(), autoSync: $("#guideAuto").checked });
+    $("#guideMask").classList.remove("on");
+    renderAccountBox(); toast("云端配置已保存");
+    afterLogin();
+  };
+  $("#guideMask").classList.add("on");
+}
+
+/* ---------- 设置面板里的账户区 ---------- */
+function fmtTime(t){ return t ? new Date(t).toLocaleString("zh-CN") : "从未"; }
+function renderAccountBox(){
+  const box = $("#accountBox"); if (!box) return;
+  const ac = S.cur, a = S.accounts[ac], c = getCloud();
+  const tag = $("#cloudTag");
+  if (tag) tag.textContent = (ACC_DISPLAY[ac]||ac) + (a.pass ? " 🔒" : "");
+  let syncTxt = "未配置 ›";
+  if (c.token && c.gistId) syncTxt = (c.autoSync ? "已开启 · 自动备份" : "已配置 · 手动") + "（上次 " + fmtTime(c.lastSync) + "）›";
+  else if (c.token) syncTxt = "缺 Gist，点此创建 ›";
+  box.innerHTML = `
+    <div class="crow" id="accLoginRow"><span class="lb">☁ 账号登陆（云端同步）</span><span class="vl">切换账号 / 密码 ›</span></div>
+    <div class="crow"><span class="lb">当前账号</span><span class="vl">${esc(ACC_DISPLAY[ac]||ac)}${a.pass?" 🔒":""}</span></div>
+    <div class="crow"><span class="lb">当前账本</span><span class="vl">${S.accounts[ac].cur === "kid" ? "亲子账本" : "主账本"}</span></div>
+    <div class="crow"><span class="lb">云端位置</span><span class="vl">${c.gistId ? esc(c.gistId) : "未创建"}</span></div>
+    <div class="crow" id="accSyncRow"><span class="lb">立即同步</span><span class="vl">${esc(syncTxt)}</span></div>
+    <div class="crow" id="accPushRow"><span class="lb">上传到云端</span><span class="vl">本机 → Gist ›</span></div>
+    <div class="crow" id="accPullRow"><span class="lb">从云端下载</span><span class="vl">Gist → 本机 ›</span></div>
+    <div class="crow" id="accCfgRow"><span class="lb">修改云端配置</span><span class="vl">Token / Gist ›</span></div>`;
+  $("#accLoginRow").onclick = () => { closeSettings(); openLogin(); };
+  $("#accSyncRow").onclick = async () => {
+    try{ await gistDownload(); toast("已从云端同步 ✓"); }
+    catch(e){ try{ await gistUpload(); toast("已上传到云端 ✓"); }catch(e2){ toast("同步失败：" + e.message, "err"); } }
+    renderAll(); renderAccountBox();
+  };
+  $("#accPushRow").onclick = async () => {
+    try{ await gistUpload(); toast("已上传到云端 ✓"); }catch(e){ toast("上传失败：" + e.message, "err"); }
+    renderAccountBox();
+  };
+  $("#accPullRow").onclick = async () => {
+    if (!confirm("用云端数据覆盖本机数据？")) return;
+    try{ await gistDownload(); toast("已从云端下载 ✓"); renderAll(); }catch(e){ toast("下载失败：" + e.message, "err"); }
+    renderAccountBox();
+  };
+  $("#accCfgRow").onclick = () => openCloudGuide();
+}
+
+/* 启动：若当前账号已配置云端，静默拉取一次（不弹任何登录框） */
+function cloudBoot(){
+  const c = getCloud();
+  if (c.autoSync && c.token && c.gistId){
+    gistDownload().then(() => { renderAll(); renderAccountBox(); })
+      .catch(e => { console.warn("启动云端同步失败", e && e.message); });
+  }
+}
+
+
+/* ---- 设置面板 ---- */
+function openSettings(){
+  renderAccountBox();
+  $("#setSheet").classList.add("on");
+  $("#setMask").classList.add("on");
+}
+function closeSettings(){
+  $("#setSheet").classList.remove("on");
+  $("#setMask").classList.remove("on");
+}
+$("#btnSettings").onclick = openSettings;
+$("#setClose").onclick   = closeSettings;
+$("#setMask").onclick    = closeSettings;
+
+$("#btnExport2").onclick = () => { closeSettings(); exportXlsx(); };
+$("#btnImport2").onclick = () => $("#fileInput2").click();
+$("#fileInput2").onchange = e => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  importXlsxFile(f).then(() => closeSettings())
+    .catch(err => { console.error(err); toast("导入失败：" + (err && err.message ? err.message : err), "err"); });
+  e.target.value = "";
+};
+
+/* 清空数据：当前账号 / 全部账号 */
+function clearAccount(ac){
+  S.accounts[ac].ledgers = { main: blankLedger(), kid: blankLedger() };
+  save();
+}
+function clearCurrentAccount(){
+  if (!confirm(`确定清空当前账号「${S.cur}」吗？\n该账号的全部收支记录与快捷备注将被删除，且无法恢复！`)) return;
+  clearAccount(S.cur);
+  aType = "expense"; aCat = "food"; aTarget = targetsOf(S.cur).def;
+  renderCats(); renderTargets(); showObj();
+  renderAcctChips();
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills();
+  renderTotal(); renderList(); renderCmp();
+  closeSettings();
+  toast("已清空当前账号「" + S.cur + "」");
+}
+function clearAllAccounts(){
+  if (!confirm("⚠️ 确定清空【全部账号】数据吗？\n所有账号的全部收支记录与快捷备注将被永久删除，且无法恢复！")) return;
+  ACCOUNTS.forEach(clearAccount);
+  S.cur = "cjy";
+  aType = "expense"; aCat = "food"; aTarget = "个人";
+  save();
+  renderAcctChips();
+  renderCats(); renderTargets(); showObj();
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills();
+  renderTotal(); renderList(); renderCmp();
+  closeSettings();
+  toast("已清空全部账号数据");
+}
+$("#btnClearCur").onclick = clearCurrentAccount;
+$("#btnClearAll").onclick = clearAllAccounts;
+
+function resetAddDateTime(){
+  const n = new Date();
+  $("#addDate").value = iso(n);
+  $("#addTime").value = hhmm(n);
+}
+
+document.addEventListener("keydown", e => {
+  if (tab !== "add") return;
+  if (e.key === "Enter"){ e.preventDefault(); saveRecord(); }
+});
+
+/* =========================================================
+   Excel 导入/导出（纯前端、单文件、无外部库）
+   写出：最小 xlsx（store ZIP + CRC32 + 内联字符串）
+   读入：支持 xlsx（含 deflate 解压 / sharedStrings）与 csv
+   纯函数模块（可被测试脚本独立抽取）如下：
+   ========================================================= */
+//XLSX-START
+function xmlEscape(s){
+  return String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[m]));
+}
+function xmlUnescape(s){
+  return String(s).replace(/&apos;/g,"'").replace(/&quot;/g,'"').replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&amp;/g,"&");
+}
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++){
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes){
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function zipStore(files){
+  const enc = new TextEncoder();
+  const chunks = [], central = [];
+  let offset = 0;
+  for (const f of files){
+    const nameBytes = enc.encode(f.name);
+    const data = f.data;
+    const crc = crc32(data);
+    const local = new Uint8Array(30 + nameBytes.length + data.length);
+    const dv = new DataView(local.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 0x0800, true);
+    dv.setUint16(8, 0, true);
+    dv.setUint16(10, 0, true);
+    dv.setUint16(12, 0, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, data.length, true);
+    dv.setUint32(22, data.length, true);
+    dv.setUint16(26, nameBytes.length, true);
+    dv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    local.set(data, 30 + nameBytes.length);
+    chunks.push(local);
+    const cen = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cen.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, 0, true);
+    cv.setUint16(14, 0, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    cen.set(nameBytes, 46);
+    central.push(cen);
+    offset += local.length;
+  }
+  const cdSize = central.reduce((s,c) => s + c.length, 0);
+  const end = new Uint8Array(22);
+  const ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(4, 0, true);
+  ev.setUint16(6, 0, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+  ev.setUint16(20, 0, true);
+  const all = [...chunks, ...central, end];
+  const total = all.reduce((s,c) => s + c.length, 0);
+  const out = new Uint8Array(total);
+  let p = 0;
+  for (const c of all){ out.set(c, p); p += c.length; }
+  return out;
+}
+function colLetter(idx){
+  let s = ""; idx += 1;
+  while (idx > 0){ const m = (idx - 1) % 26; s = String.fromCharCode(65 + m) + s; idx = Math.floor((idx - 1) / 26); }
+  return s;
+}
+function buildXlsx(sheetName, rows){
+  const enc = new TextEncoder();
+  const sheetRows = rows.map((row, ri) => {
+    const cells = row.map((val, ci) => {
+      const ref = colLetter(ci) + (ri + 1);
+      if (typeof val === "number" && isFinite(val)){
+        return `<c r="${ref}"><v>${val}</v></c>`;
+      }
+      return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(val == null ? "" : val)}</t></is></c>`;
+    }).join("");
+    return `<row r="${ri + 1}">${cells}</row>`;
+  }).join("");
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n` +
+    `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetData>${sheetRows}</sheetData></worksheet>`;
+  const files = [
+    { name:"[Content_Types].xml", data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>') },
+    { name:"_rels/.rels", data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>') },
+    { name:"xl/workbook.xml", data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xmlEscape(sheetName).slice(0,31)}" sheetId="1" r:id="rId1"/></sheets></workbook>`) },
+    { name:"xl/_rels/workbook.xml.rels", data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>') },
+    { name:"xl/worksheets/sheet1.xml", data: enc.encode(sheetXml) }
+  ];
+  return zipStore(files);
+}
+function parseSharedStrings(xml){
+  const out = [];
+  const siRe = /<si>([\s\S]*?)<\/si>/g; let m;
+  while ((m = siRe.exec(xml))){
+    const inner = m[1]; const parts = [];
+    const tRe = /<t[^>]*>([\s\S]*?)<\/t>/g; let t;
+    while ((t = tRe.exec(inner))) parts.push(xmlUnescape(t[1]));
+    out.push(parts.join(""));
+  }
+  return out;
+}
+function parseSheetXml(xml, shared){
+  const rows = [];
+  const rowRe = /<row\b[^>]*>([\s\S]*?)<\/row>/g; let rm;
+  while ((rm = rowRe.exec(xml))){
+    const cells = [];
+    const cRe = /<c\b([^>]*)>([\s\S]*?)<\/c>/g; let cm;
+    while ((cm = cRe.exec(rm[1]))){
+      const attr = cm[1], body = cm[2];
+      const tM = /t="([^"]+)"/.exec(attr);
+      const t = tM ? tM[1] : "";
+      let val = "";
+      if (t === "inlineStr"){
+        const isM = /<is>([\s\S]*?)<\/is>/.exec(body);
+        if (isM){
+          const parts = []; const tRe = /<t[^>]*>([\s\S]*?)<\/t>/g; let tm;
+          while ((tm = tRe.exec(isM[1]))) parts.push(xmlUnescape(tm[1]));
+          val = parts.join("");
+        }
+      } else if (t === "s"){
+        const vM = /<v>([\s\S]*?)<\/v>/.exec(body);
+        if (vM){ const i = parseInt(vM[1], 10); val = shared[i] != null ? shared[i] : ""; }
+      } else {
+        const vM = /<v>([\s\S]*?)<\/v>/.exec(body);
+        if (vM) val = vM[1].trim();
+      }
+      cells.push(val);
+    }
+    rows.push(cells);
+  }
+  return rows;
+}
+async function inflateRaw(data){
+  if (typeof DecompressionStream === "undefined") return data;
+  const ds = new DecompressionStream("deflate-raw");
+  const stream = new Blob([data]).stream().pipeThrough(ds);
+  const buf = await new Response(stream).arrayBuffer();
+  return new Uint8Array(buf);
+}
+async function unzipStore(bytes){
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= 0; i--){
+    if (bytes[i] === 0x50 && bytes[i+1] === 0x4B && bytes[i+2] === 0x05 && bytes[i+3] === 0x06){ eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("不是有效的 Excel 文件");
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const cdCount = dv.getUint16(eocd + 10, true);
+  const cdOffset = dv.getUint32(eocd + 16, true);
+  const entries = []; let p = cdOffset;
+  for (let i = 0; i < cdCount; i++){
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true);
+    const compSize = dv.getUint32(p + 20, true);
+    const fnameLen = dv.getUint16(p + 28, true);
+    const extraLen = dv.getUint16(p + 30, true);
+    const commLen = dv.getUint16(p + 32, true);
+    const localOffset = dv.getUint32(p + 42, true);
+    const name = new TextDecoder("utf-8").decode(bytes.slice(p + 46, p + 46 + fnameLen));
+    const lnameLen = dv.getUint16(localOffset + 26, true);
+    const lextraLen = dv.getUint16(localOffset + 28, true);
+    const dataStart = localOffset + 30 + lnameLen + lextraLen;
+    let data = bytes.slice(dataStart, dataStart + compSize);
+    if (method === 8) data = new Uint8Array(await inflateRaw(data));
+    entries.push({ name, data, text: new TextDecoder("utf-8").decode(data) });
+    p += 46 + fnameLen + extraLen + commLen;
+  }
+  return entries;
+}
+function parseCsv(text){
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let row = [], field = "", i = 0, inq = false;
+  while (i < text.length){
+    const c = text[i];
+    if (inq){
+      if (c === '"'){ if (text[i+1] === '"'){ field += '"'; i += 2; continue; } inq = false; i++; continue; }
+      field += c; i++; continue;
+    }
+    if (c === '"'){ inq = true; i++; continue; }
+    if (c === ','){ row.push(field); field = ""; i++; continue; }
+    if (c === '\n'){ row.push(field); rows.push(row); row = []; field = ""; i++; continue; }
+    if (c === '\r'){ i++; continue; }
+    field += c; i++;
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(c => c !== ""));
+}
+function normalizeDate(s){
+  s = String(s).trim();
+  if (!s) return "";
+  const m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if (!m) return "";
+  const y = +m[1], mo = +m[2], d = +m[3];
+  if (y < 2000 || y > 2100 || mo < 1 || mo > 12 || d < 1 || d > 31) return "";
+  return `${y}-${pad(mo)}-${pad(d)}`;
+}
+function normTime(s){
+  s = String(s).trim();
+  const m = s.match(/(\d{1,2})[:：](\d{1,2})/);
+  if (m) return `${pad(+m[1])}:${pad(+m[2])}`;
+  const m2 = s.match(/^(\d{4})$/);
+  if (m2) return `${pad(+m2[1].slice(0,2))}:${pad(+m2[1].slice(2))}`;
+  return "";
+}
+//XLSX-END
+
+/* ---------- 导出 / 导入 业务层 ---------- */
+function catNameFor(ac, r){
+  const list = r.type === "expense" ? CATS.expense : (CATS.income[ac] || CATS.income.cjy);
+  const c = list.find(x => x.id === r.cat) || list[list.length-1];
+  return c.name;
+}
+function resolveCatId(type, ac, raw){
+  raw = (raw||"").trim();
+  const list = type === "expense" ? CATS.expense : (CATS.income[ac] || CATS.income.cjy);
+  let c = list.find(x => x.id === raw) || list.find(x => x.name === raw);
+  return c ? c.id : "other";
+}
+function matchHeader(h){
+  h = (h||"").trim();
+  if (/账号|帐户|账户|帐号|account|账?户名|账?号名|所属账号|所属账户/i.test(h)) return "ac";
+  if (/^账本$|账簿|账册|ledger/i.test(h)) return "led";
+  if (/^日期$|date/i.test(h)) return "date";
+  if (/^时间$|时刻|time/i.test(h)) return "time";
+  if (/^类型$|收支|type/i.test(h)) return "type";
+  if (/^分类$|类别|科目|category|cat/i.test(h)) return "cat";
+  if (/^支出对象$|对象|target|object/i.test(h)) return "obj";
+  if (/^金额$|数目|钱|amount|price|总额/i.test(h)) return "amt";
+  if (/^备注$|说明|摘要|note|remark/i.test(h)) return "note";
+  return h;
+}
+function exportXlsx(){
+  const rows = [["账号","账本","日期","时间","类型","分类","支出对象","金额","备注"]];
+  ACCOUNTS.forEach(ac => {
+    ["main","kid"].forEach(L => {
+      S.accounts[ac].ledgers[L].records.forEach(r => {
+        rows.push([
+          ACC_DISPLAY[ac] || ac,
+          L === "kid" ? "亲子" : "主",
+          r.date,
+          r.time || "",
+          r.type === "income" ? "收入" : "支出",
+          catNameFor(ac, r),
+          r.type === "income" ? "" : (r.target || ""),
+          r.amount,
+          r.note || ""
+        ]);
+      });
+    });
+  });
+  const xlsx = buildXlsx("账目明细", rows);
+  const blob = new Blob([xlsx], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `打工人小账本-账目明细-${iso(new Date())}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast(`已导出 ${rows.length - 1} 条记录（含全部账号）`);
+}
+async function importXlsxFile(file){
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let matrix;
+  if (bytes[0] === 0x50 && bytes[1] === 0x4B){
+    const entries = await unzipStore(bytes);
+    const sheet = entries.find(e => /^xl\/worksheets\/sheet\d+\.xml$/i.test(e.name))
+              || entries.find(e => /sheet\d+\.xml$/i.test(e.name));
+    if (!sheet) throw new Error("Excel 中未找到工作表");
+    const ss = entries.find(e => e.name === "xl/sharedStrings.xml");
+    const shared = ss ? parseSharedStrings(ss.text) : [];
+    matrix = parseSheetXml(sheet.text, shared);
+  } else {
+    matrix = parseCsv(new TextDecoder("utf-8").decode(bytes));
+  }
+  applyImport(matrix, file.name);
+}
+function applyImport(matrix, fileName){
+  if (!matrix || matrix.length < 2){ toast("文件中没有可导入的数据","err"); return; }
+  const header = matrix[0].map(h => (h||"").trim());
+  const idx = {};
+  header.forEach((h, i) => { const k = matchHeader(h); if (!(k in idx)) idx[k] = i; });
+  const col = n => (n in idx ? idx[n] : -1);
+  const iAc = col("ac"), iLed = col("led"), iDate = col("date"), iTime = col("time"), iType = col("type"),
+        iCat = col("cat"), iObj = col("obj"), iAmt = col("amt"), iNote = col("note");
+  if (iDate < 0){ toast("缺少「日期」列，无法导入","err"); return; }
+  const newRecs = [];
+  let incCount = 0, expCount = 0, skip = 0;
+  let unkAc = 0;                       // 账号列有值但无法识别、已归入当前账号的行数
+  for (let r = 1; r < matrix.length; r++){
+    const row = matrix[r];
+    const date = normalizeDate(iDate >= 0 ? row[iDate] : "");
+    if (!date){ skip++; continue; }
+    const acRaw = (iAc >= 0 ? row[iAc] : "") || "";
+    let ac = resolveAccount(acRaw);
+    if (!ac){ if (acRaw) unkAc++; ac = S.cur; }   // 未识别的账号值 → 归入当前账号
+    let led = "main";
+    if (iLed >= 0){ const lv = (row[iLed] || "").trim(); if (/亲子|kid|子/.test(lv)) led = "kid"; }
+    if (!S.accounts[ac]) S.accounts[ac] = blankAcc();
+    if (!S.accounts[ac].ledgers[led]) S.accounts[ac].ledgers[led] = blankLedger();
+    const typeRaw = (iType >= 0 ? row[iType] : "") || "支出";
+    const type = /收入|收\s*入|in|income/.test(typeRaw.toLowerCase()) ? "income" : "expense";
+    const amtRaw = (iAmt >= 0 ? row[iAmt] : "") || "";
+    const amount = parseFloat(String(amtRaw).replace(/[¥￥,\s]/g, ""));
+    if (!isFinite(amount) || !(amount > 0)){ skip++; continue; }
+    const cat = resolveCatId(type, ac, iCat >= 0 ? row[iCat] : "");
+    let target = (iObj >= 0 ? row[iObj] : "") || "";
+    if (type === "expense"){ if (!ALL_TARGETS.includes(target)) target = targetsOf(ac).def; }
+    else target = "";
+    const time = normTime(iTime >= 0 ? row[iTime] : "");
+    const note = ((iNote >= 0 ? row[iNote] : "") || "").slice(0, 24);
+    newRecs.push({ id: uid(), ac, led, date, time, type, amount: Math.round(amount*100)/100,
+                   cat, target, note, demo: false });
+    if (type === "income") incCount++; else expCount++;
+  }
+  if (!newRecs.length){ toast("没有可导入的有效记录","err"); return; }
+  const noAcCol = (iAc < 0);
+  let warn = "";
+  if (noAcCol) warn = `（未检测到账号列，全部 ${newRecs.length} 条将导入当前账号「${S.cur}」）`;
+  else if (unkAc) warn = `（其中 ${unkAc} 条账号无法识别，已归入当前账号「${S.cur}」）`;
+  const msg = `将导入 ${newRecs.length} 条（收入 ${incCount} / 支出 ${expCount}）${skip ? `，跳过 ${skip} 条无效` : ""}。\n这些记录会按账号分别并入对应账号${warn}，是否继续？`;
+  if (!confirm(msg)) return;
+  const byKey = {};   // ac + "|" + led
+  newRecs.forEach(rec => {
+    const k = rec.ac + "|" + rec.led;
+    (byKey[k] = byKey[k] || []).push(rec);
+  });
+  Object.keys(byKey).forEach(k => {
+    const [ac, led] = k.split("|");
+    if (!S.accounts[ac]) S.accounts[ac] = blankAcc();
+    if (!S.accounts[ac].ledgers[led]) S.accounts[ac].ledgers[led] = blankLedger();
+    const lg = S.accounts[ac].ledgers[led];
+    lg.records.push(...byKey[k]);
+    const existing = lg.quickNotes.slice();
+    const newNotes = [];
+    byKey[k].forEach(r => {
+      if (r.note && existing.indexOf(r.note) < 0 && newNotes.indexOf(r.note) < 0) newNotes.push(r.note);
+    });
+    let arr = newNotes.concat(existing);   // 新导入的排在前面，超 20 时优先保留
+    if (arr.length > 20) arr = arr.slice(0, 20);
+    lg.quickNotes = arr;
+  });
+  save();
+  renderAcctChips();
+  initRange(); buildPointRange(); syncPointRange();
+  renderQuickNotes(); renderFiltPills();
+  renderTotal(); renderList(); renderCmp();
+  go("total");
+  toast(`导入成功：${newRecs.length} 条记录`);
+}
+
+/* =========================================================
+   初始化
+   ========================================================= */
+function renderAll(){
+  renderCats(); renderTargets(); showObj();
+  renderAcctChips();
+  initRange(); buildPointRange(); syncPointRange();
+  resetAddDateTime();
+  renderQuickNotes();
+  renderTotal(); renderList(); renderCmp();
+}
+S = load();
+initRange();
+renderAll();
+save();
+if (S._cleaned){ delete S._cleaned; toast("已清除示例数据，现在从 0 条开始"); }
+
+/* 云同步：已登录则自动同步一次；从未选择过游客则弹登录 */
+renderAccountBox();
+cloudBoot();
+</script>
+
+<script>
+if ("serviceWorker" in navigator){ window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
+</script>
+</body>
+</html>
