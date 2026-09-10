@@ -55,6 +55,12 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
   background:var(--cream2);flex:none;margin-right:2px}
 .nav-gear .ic{width:18px;height:18px}
 .nav-gear:active{background:var(--mint-l);color:var(--mint-d)}
+/* 隐私模式（防偷窥）切换按钮：右上角，常驻可见 */
+.nav-eye{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--ink2);
+  background:var(--cream2);flex:none;margin-left:auto}
+.nav-eye .ic{width:18px;height:18px}
+.nav-eye:active{background:var(--mint-l);color:var(--mint-d)}
+.nav-eye.on{background:var(--coral-l);color:var(--coral-d)}
 /* 设置 / 危险操作按钮 */
 .dangerbtn{height:44px;border-radius:11px;background:var(--coral-l);color:var(--coral-d);font-size:var(--fs-m);
   font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;width:100%}
@@ -404,6 +410,8 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 <symbol id="c-salary" viewBox="0 0 24 24"><path d="M3.6 7.6h13.8a2.4 2.4 0 0 1 2.4 2.4v7.4a2.4 2.4 0 0 1-2.4 2.4H6a2.4 2.4 0 0 1-2.4-2.4z"/><path d="M3.6 7.6V6a2 2 0 0 1 2-2h10.4"/><path d="M16.6 12.4h.02" stroke-width="2.6"/></symbol>
 <symbol id="c-side" viewBox="0 0 24 24"><path d="M12 3.4 13.7 9 19.4 10.6 13.7 12.2 12 17.8 10.3 12.2 4.6 10.6 10.3 9z"/></symbol>
 <symbol id="c-invest" viewBox="0 0 24 24"><path d="M4 19.4h16"/><path d="M4.6 15.2 9.4 10l3.6 3.2 6-6.4"/><path d="M19 6.8h-3.4M19 6.8v3.4"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.4 12S6 5.4 12 5.4 21.6 12 21.6 12 18 18.6 12 18.6 2.4 12 2.4 12z"/><circle cx="12" cy="12" r="3.1"/></symbol>
+<symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 4.2 21 20.4M9.8 9.5A3.1 3.1 0 0 0 14.5 14.2M10.2 5.8C10.9 5.6 11.5 5.4 12 5.4 18 5.4 21.6 12 21.6 12c-.7 1.1-1.9 2.7-3.6 3.9M6.1 7.4C4.1 8.8 3 10.8 2.4 12 2.4 12 6 18.6 12 18.6c1.6 0 3-.4 4.3-1.1"/></symbol>
 </defs></svg>
 
 <div class="stage">
@@ -414,6 +422,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
     <button class="nav-gear" id="btnSettings" aria-label="设置"><svg class="ic"><use href="#i-gear"/></svg></button>
     <h1 id="navTitle">记一笔</h1>
     <span class="sub" id="navSub"></span>
+    <button class="nav-eye" id="btnPrivacy" aria-label="开启隐私模式（防偷窥）"><svg class="ic"><use href="#i-eye"/></svg></button>
   </div>
 
   <div class="screen">
@@ -558,6 +567,18 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
     </details>
 
     <details class="fold">
+      <summary class="fh"><svg class="ic"><use href="#i-eye"/></svg><b>隐私模式</b>
+        <span class="t" id="privacyTag">关</span><span class="arr"></span></summary>
+      <div class="fbody">
+        <div class="crow" id="privacyRow" style="cursor:pointer">
+          <span class="lb">🔒 开启防偷窥</span>
+          <span class="vl" id="privacyState">关</span>
+        </div>
+        <div class="mig-tip">开启后，所有<b>金额</b>都会变成 <b>¥••••</b>，旁边有人也看不清具体数目。在公共场合临时隐藏，需要时再点顶部<b>眼睛图标</b>恢复。开关状态会自动保存。</div>
+      </div>
+    </details>
+
+    <details class="fold">
       <summary class="fh"><svg class="ic"><use href="#i-note"/></svg><b>账本管理</b>
         <span class="t">账号 <span id="mgmtAcName">—</span></span><span class="arr"></span></summary>
       <div class="fbody">
@@ -647,9 +668,11 @@ function money(n){
 const money0 = n => (n<0?"-¥":"¥") + Math.round(Math.abs(n)).toLocaleString("zh-CN");
 const esc = s => String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
-/* 收入显示：默认直接可见（不再遮罩）。如需隐私模式可后续在设置中开启。 */
+/* 金额显示：隐私模式（防偷窥）开启时，隐藏具体数字、仅保留符号 */
 function inkMask(formatted){
-  return formatted;
+  if (!S || !S.privacy) return formatted;
+  if (formatted.charAt(0) === "-") return "-¥••••";
+  return "¥••••";
 }
 
 /* ---------- 分类与支出对象 ---------- */
@@ -853,6 +876,7 @@ function load(){
       }
     });
   });
+  out.privacy = !!(data && data.privacy);   // 隐私模式（防偷窥）开关，默认关
   return out;
 }
 
@@ -937,7 +961,7 @@ function showSaved(rec){
   el.className = "toast act";
   el.innerHTML = `<svg class="ic"><use href="#i-check"/></svg><span class="tx"></span><button class="undo" type="button">撤销</button>`;
   el.querySelector(".tx").textContent =
-    `已保存：${rec.type === "income" ? "收入" : "支出"} · ${c.name}${who} · ${money(rec.amount)} · ${dt}`;
+    `已保存：${rec.type === "income" ? "收入" : "支出"} · ${c.name}${who} · ${inkMask(money(rec.amount))} · ${dt}`;
   el.querySelector(".undo").onclick = () => {
     curAcc().records = curAcc().records.filter(x => x.id !== rec.id);
     save();
@@ -1091,7 +1115,7 @@ function saveRecord(){
    ========================================================= */
 function cmpLine(val, maxV, color, inc){
   const pct = maxV > 0 ? Math.max(2, val/maxV*100) : 0;
-  const txt = (inc?"+":"−") + money0(val);
+  const txt = (inc?"+":"−") + inkMask(money0(val));
   const shown = txt;
   return `<div class="cmp-line">
     <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
@@ -1124,7 +1148,7 @@ function barRow(name, ic, val, max, pct, color, note){
   return `<div class="bar-row">
     <div class="top">
       <div class="nm">${ic?`<svg class="ic"><use href="#${ic}"/></svg>`:""}<span>${esc(name)}</span></div>
-      <div class="vv">${money0(val)}${note?`<em>${note}</em>`:""}</div>
+      <div class="vv">${inkMask(money0(val))}${note?`<em>${note}</em>`:""}</div>
     </div>
     <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
   </div>`;
@@ -1132,7 +1156,7 @@ function barRow(name, ic, val, max, pct, color, note){
 function renderTotal(){
   const s = stat(), maxIE = Math.max(s.income, s.expense, 1);
   $("#sIn").innerHTML     = inkMask(money0(s.income));
-  $("#sOut").textContent  = money0(s.expense);
+  $("#sOut").textContent  = inkMask(money0(s.expense));
   $("#sBal").innerHTML    = inkMask(money0(s.balance));
   $("#sBal").className = "v num " + (s.balance >= 0 ? "pos" : "neg");
   $("#catTag").textContent = s.n ? `${s.n} 笔` : "—";
@@ -1195,7 +1219,7 @@ function renderList(){
   rs.forEach(r => { if (r.type === "income") inc += r.amount; else exp += r.amount; });
   $("#listSum").innerHTML = `
     <div><div class="k">收入</div><div class="v pos">${inkMask(money0(inc))}</div></div>
-    <div><div class="k">支出</div><div class="v out">${money0(exp)}</div></div>
+    <div><div class="k">支出</div><div class="v out">${inkMask(money0(exp))}</div></div>
     <div><div class="k">净额</div><div class="v ${inc-exp>=0?"pos":""}">${inkMask(money0(inc-exp))}</div></div>`;
 
   if (!rs.length){
@@ -1215,7 +1239,7 @@ function renderList(){
           ${obj}
         </div>
       </div>
-      <div class="rr"><div class="am ${inc?"pos":""}">${inc ? "+"+money(r.amount) : "−"+money(r.amount)}</div></div>
+      <div class="rr"><div class="am ${inc?"pos":""}">${inc ? "+"+inkMask(money(r.amount)) : "−"+inkMask(money(r.amount))}</div></div>
       <button class="del edit" data-edit="${r.id}" aria-label="修改"><svg class="ic"><use href="#i-edit"/></svg></button>
       <button class="del" data-del="${r.id}" aria-label="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
     </div>`;
@@ -1430,7 +1454,7 @@ $("#recList").onclick = e => {
   if (del){
     const id = del.dataset.del, r = curAcc().records.find(x => x.id === id); if (!r) return;
     const c = catOf(r.type, r.cat);
-    if (!confirm(`删除「${c.name} ${money(r.amount)}」？删除后无法恢复。`)) return;
+    if (!confirm(`删除「${c.name} ${inkMask(money(r.amount))}」？删除后无法恢复。`)) return;
     curAcc().records = curAcc().records.filter(x => x.id !== id);
     save(); renderFiltPills(); renderCmp(); renderTotal(); renderList(); toast("已删除");
     return;
@@ -1950,6 +1974,30 @@ function closeSettings(){
   $("#setSheet").classList.remove("on");
   $("#setMask").classList.remove("on");
 }
+
+/* 隐私模式（防偷窥）：顶部眼睛图标 / 设置内开关均可切换，金额自动隐藏 */
+function togglePrivacy(){
+  S.privacy = !S.privacy;
+  save();
+  applyPrivacy();
+  toast(S.privacy ? "隐私模式已开启，金额已隐藏" : "隐私模式已关闭，金额已显示");
+}
+function applyPrivacy(){
+  const on = !!S.privacy;
+  const btn = $("#btnPrivacy");
+  if (btn){
+    btn.classList.toggle("on", on);
+    const use = btn.querySelector("use");
+    if (use) use.setAttribute("href", on ? "#i-eye-off" : "#i-eye");
+    btn.setAttribute("aria-label", on ? "关闭隐私模式" : "开启隐私模式（防偷窥）");
+  }
+  const tag = $("#privacyTag"); if (tag) tag.textContent = on ? "开" : "关";
+  const st  = $("#privacyState"); if (st) st.textContent = on ? "开" : "关";
+  renderTotal(); renderList(); renderCmp();   // 立即刷新所有金额显示
+}
+$("#btnPrivacy").onclick  = togglePrivacy;
+$("#privacyRow").onclick  = togglePrivacy;
+
 $("#btnSettings").onclick = openSettings;
 $("#setClose").onclick   = closeSettings;
 $("#setMask").onclick    = closeSettings;
@@ -2416,6 +2464,7 @@ if (S._cleaned){ delete S._cleaned; toast("已清除示例数据，现在从 0 �
 initRange(); buildPointRange(); syncPointRange();
 renderAll();
 renderAccountBox();
+applyPrivacy();   // 应用已保存的隐私模式（金额隐藏/显示）
 cloudBoot();
 save();
 </script>
