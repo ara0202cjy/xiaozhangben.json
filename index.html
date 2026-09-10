@@ -113,10 +113,13 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 .acctchips{display:flex;gap:6px}
 .acctchips button{border:1px solid var(--line);background:#FFFDF8;border-radius:99px;padding:5px 16px;font-size:var(--fs-m);font-weight:800;color:var(--ink2)}
 .acctchips button.on{background:var(--mint-d);color:#fff;border-color:var(--mint-d)}
-/* 账本切换（主账本 / 亲子账本） */
-.ledgerwrap{display:flex;flex-direction:column;gap:4px;flex:none;margin-top:1px}
-.ledgerwrap .objlabel{color:var(--sun-d,#B98B1C)}
+/* 账本切换（主账本 / 亲子账本）：明显的选项卡 + 放大字号 */
+.ledgerwrap{display:flex;flex-direction:column;gap:6px;flex:none;margin-top:2px}
+.ledgerwrap .objlabel{color:var(--sun-d,#B98B1C);font-size:14px;font-weight:800}
+.ledgerchips{display:flex;gap:8px;flex-wrap:wrap}
+.ledgerchips button{border:1px solid var(--line);background:#FFFDF8;border-radius:99px;padding:9px 16px;font-size:15px;font-weight:800;color:var(--ink2)}
 .ledgerchips button.on{background:var(--sun);color:#7a5a00;border-color:var(--sun)}
+.ledgerchips button.add{background:transparent;color:var(--sun-d);border-style:dashed;font-weight:700}
 
 /* 设置面板：账本 / 账号管理列表 */
 .mgmt-list{display:flex;flex-direction:column;gap:7px;margin-top:4px}
@@ -644,10 +647,9 @@ function money(n){
 const money0 = n => (n<0?"-¥":"¥") + Math.round(Math.abs(n)).toLocaleString("zh-CN");
 const esc = s => String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
-/* 收入隐私遮罩：仅当前账本 mask=true 时遮罩（主账本含 cjy 数据） */
+/* 收入显示：默认直接可见（不再遮罩）。如需隐私模式可后续在设置中开启。 */
 function inkMask(formatted){
-  if (!shouldMask()) return formatted;             // 仅主账本遮罩
-  return `<span class="ink-mask" data-real="${esc(formatted)}" role="button" tabindex="0" title="点击查看收入">*****</span>`;
+  return formatted;
 }
 
 /* ---------- 分类与支出对象 ---------- */
@@ -935,7 +937,7 @@ function showSaved(rec){
   el.className = "toast act";
   el.innerHTML = `<svg class="ic"><use href="#i-check"/></svg><span class="tx"></span><button class="undo" type="button">撤销</button>`;
   el.querySelector(".tx").textContent =
-    `已保存：${rec.type === "income" ? "收入" : "支出"} · ${c.name}${who} · ${(rec.type==="income" && shouldMask()) ? "*****" : money(rec.amount)} · ${dt}`;
+    `已保存：${rec.type === "income" ? "收入" : "支出"} · ${c.name}${who} · ${money(rec.amount)} · ${dt}`;
   el.querySelector(".undo").onclick = () => {
     curAcc().records = curAcc().records.filter(x => x.id !== rec.id);
     save();
@@ -1090,9 +1092,7 @@ function saveRecord(){
 function cmpLine(val, maxV, color, inc){
   const pct = maxV > 0 ? Math.max(2, val/maxV*100) : 0;
   const txt = (inc?"+":"−") + money0(val);
-  const shown = (inc && shouldMask())
-    ? `<span class="ink-mask" data-real="${esc(txt)}" role="button" tabindex="0" title="点击查看收入">*****</span>`
-    : txt;
+  const shown = txt;
   return `<div class="cmp-line">
     <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
     <span class="cmp-v ${inc?"pos":"neg"}">${shown}</span>
@@ -1215,11 +1215,7 @@ function renderList(){
           ${obj}
         </div>
       </div>
-      <div class="rr"><div class="am ${inc?"pos":""}">${inc
-        ? (shouldMask()
-            ? `<span class="ink-mask" data-real="${esc("+"+money(r.amount))}" role="button" tabindex="0" title="点击查看收入">+*****</span>`
-            : "+"+money(r.amount))
-        : "−"+money(r.amount)}</div></div>
+      <div class="rr"><div class="am ${inc?"pos":""}">${inc ? "+"+money(r.amount) : "−"+money(r.amount)}</div></div>
       <button class="del edit" data-edit="${r.id}" aria-label="修改"><svg class="ic"><use href="#i-edit"/></svg></button>
       <button class="del" data-del="${r.id}" aria-label="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
     </div>`;
