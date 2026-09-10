@@ -2433,6 +2433,23 @@ if (!S.cur){
 save();
 </script>
 
-<script>if ("serviceWorker" in navigator){ window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(function(){}); }); }</script>
+<script>if ("serviceWorker" in navigator){ (function(){ var reloaded=false, pending=false;
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").then(function(reg){
+      if (reg.waiting){ pending=true; reg.waiting.postMessage("skip"); }
+      reg.update();
+      reg.addEventListener("updatefound", function(){
+        var n = reg.installing;
+        if (n) n.addEventListener("statechange", function(){
+          if (n.state === "installed"){ pending=true; n.postMessage("skip"); }
+        });
+      });
+      setInterval(function(){ reg.update(); }, 3600000);
+    }).catch(function(){});
+    navigator.serviceWorker.addEventListener("controllerchange", function(){
+      if (pending && !reloaded){ reloaded=true; location.reload(); }
+    });
+  });
+})(); }</script>
 </body>
 </html>
