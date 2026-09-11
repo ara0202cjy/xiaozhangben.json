@@ -366,6 +366,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 .fold .arr{width:9px;height:9px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(45deg);transition:transform .2s;margin-left:auto;flex:none}
 .fold:not([open]) .arr{transform:rotate(-45deg)}
 .fold .fbody{padding:0 14px 14px}
+.fold[open] .fbody{max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 /* 设置 / 登录面板字号放大 */
 .sheet{font-size:14.5px}
 .sheet .crow .lb{font-size:14px;font-weight:800}
@@ -575,22 +576,10 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       <button class="cx" id="setClose" aria-label="关闭">×</button>
     </div>
 
-    <details class="fold" open>
+    <details class="fold">
       <summary class="fh"><svg class="ic"><use href="#i-cloud"/></svg><b>云同步</b>
         <span class="t" id="cloudTag">未登录</span><span class="arr"></span></summary>
       <div class="fbody" id="accountBox"></div>
-    </details>
-
-    <details class="fold">
-      <summary class="fh"><svg class="ic"><use href="#i-eye"/></svg><b>隐私模式</b>
-        <span class="t" id="privacyTag">关</span><span class="arr"></span></summary>
-      <div class="fbody">
-        <div class="crow" id="privacyRow" style="cursor:pointer">
-          <span class="lb">🔒 开启防偷窥</span>
-          <span class="vl" id="privacyState">关</span>
-        </div>
-        <div class="mig-tip">开启后，<b>收入与结余</b>会变成 <b>¥••••</b> 隐藏起来，旁边有人也看不清你赚多少、剩多少；<b>支出仍然可见</b>，方便日常核对花销。需要时再点顶部<b>眼睛图标</b>恢复。开关状态会自动保存。</div>
-      </div>
     </details>
 
     <details class="fold">
@@ -602,7 +591,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       </div>
     </details>
 
-    <details class="fold" open>
+    <details class="fold">
       <summary class="fh"><svg class="ic"><use href="#i-tag"/></svg><b>分类管理</b>
         <span class="t">支出/收入分类可增删改</span><span class="arr"></span></summary>
       <div class="fbody">
@@ -615,24 +604,13 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       </div>
     </details>
 
-    <details class="fold" open>
+    <details class="fold">
       <summary class="fh"><svg class="ic"><use href="#i-tag"/></svg><b>对象管理</b>
         <span class="t">支出对象可增删改</span><span class="arr"></span></summary>
       <div class="fbody">
         <div class="mg-cap">支出对象</div>
         <div id="targetList" class="chipwrap"></div>
         <button class="weakbtn" id="btnAddTarget">＋ 新增支出对象</button>
-      </div>
-    </details>
-
-    <details class="fold">
-      <summary class="fh"><svg class="ic"><use href="#i-note"/></svg><b>高频词（按分类）</b>
-        <span class="t">每个分类不同</span><span class="arr"></span></summary>
-      <div class="fbody">
-        <div class="filtrow"><span class="flab">分类</span><div class="fpills wrap" id="noteCatTabs"></div></div>
-        <div id="noteEditList" class="mgmt-list" style="margin-top:6px"></div>
-        <button class="weakbtn" id="btnAddNote2" style="margin-top:8px">＋ 新增高频词</button>
-        <div class="mig-tip">高频词不会自动生成，只能在这里或记账页手动增删；<b>每个分类有各自独立的高频词</b>。</div>
       </div>
     </details>
 
@@ -646,13 +624,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
         </div>
         <input type="file" id="fileInput2" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
         <div class="mig-tip">导出<b>全部账号</b>的原始账目明细（含收入/支出），可分享到微信或存到手机；导入时自动识别列、并入现有数据，方便换机迁移。</div>
-      </div>
-    </details>
-
-    <details class="fold">
-      <summary class="fh"><svg class="ic"><use href="#i-trash"/></svg><b>清空数据</b>
-        <span class="t">不可恢复</span><span class="arr"></span></summary>
-      <div class="fbody">
+        <div class="mig-tip" style="color:var(--coral-d);border-top:1px dashed var(--line2);padding-top:8px;margin-top:6px">危险操作（不可恢复）：</div>
         <div class="set-row" style="margin-bottom:8px">
           <button class="dangerbtn weak" id="btnClearCur"><svg class="ic"><use href="#i-trash"/></svg>清空当前账号</button>
         </div>
@@ -2128,6 +2100,7 @@ function afterTargetChange(){
 }
 /* 高频词管理（按分类）：每个分类有各自独立的高频词 */
 function renderNoteMgr(){
+  if (!$("#noteCatTabs")) return;   // 设置里已移除高频词管理，跳过
   const a = curAcc();
   const exp = (a.cats && a.cats.expense) || CATS.expense;
   const inc = (a.cats && a.cats.income) || (CATS.income[a.profile] || CATS.income.cjy);
@@ -2179,18 +2152,19 @@ $("#targetList").onclick = e => {
   if (b.dataset.act === "ren") renameTarget(i);
   else delTarget(i);
 };
-$("#noteCatTabs").onclick = e => {
-  const p = e.target.closest("[data-nc]"); if (!p) return;
-  noteEditCat = p.dataset.nc; renderNoteMgr();
-};
-$("#btnAddNote2").onclick = addNote2;
-$("#noteEditList").onclick = e => {
-  const b = e.target.closest("[data-act]"); if (!b) return;
-  if (b.dataset.act === "delnote") delNote2(b.dataset.v);
-};
-
 /* 设置面板里的「新增账本」按钮 */
 $("#btnAddLedger2").onclick = () => addLedger();
+
+/* 手风琴：设置分组只允许一项展开，展开一项时自动折叠其余 */
+const setSheetEl = $("#setSheet");
+if (setSheetEl){
+  setSheetEl.addEventListener("toggle", e => {
+    const d = e.target;
+    if (d && d.tagName === "DETAILS" && d.classList.contains("fold") && d.open){
+      setSheetEl.querySelectorAll("details.fold").forEach(o => { if (o !== d) o.open = false; });
+    }
+  }, true);
+}
 
 /* 启动：若当前账号已配置云端，静默拉取一次（不弹任何登录框） */
 function cloudBoot(){
@@ -2207,7 +2181,6 @@ function openSettings(){
   renderAccountBox();
   renderLedgerMgmt();
   renderCatMgmt();
-  renderNoteMgr();
   $("#setSheet").classList.add("on");
   $("#setMask").classList.add("on");
 }
@@ -2237,7 +2210,6 @@ function applyPrivacy(){
   renderTotal(); renderList(); renderCmp();   // 立即刷新所有金额显示
 }
 $("#btnPrivacy").onclick  = togglePrivacy;
-$("#privacyRow").onclick  = togglePrivacy;
 
 $("#btnSettings").onclick = openSettings;
 $("#setClose").onclick   = closeSettings;
