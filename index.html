@@ -838,9 +838,11 @@ function normalizeAcc(acc, key){
   if (Array.isArray(acc.ledgers)){
     ledgers = acc.ledgers.map(lg => {
       const o = { id: lg.id || uid(), name: lg.name || "账本",
-                  profile: lg.profile || "cjy", mask: !!lg.mask, records: [], cats: null, targets: null, notes: {} };
-      o.records = normRecs(lg.records);
-      o.notes = {};
+                  profile: lg.profile || "cjy", mask: !!lg.mask,
+                  records: normRecs(lg.records),
+                  cats:    (lg.cats    && typeof lg.cats    === "object" && !Array.isArray(lg.cats))    ? lg.cats    : null,
+                  targets: (lg.targets && typeof lg.targets === "object" && !Array.isArray(lg.targets)) ? lg.targets : null,
+                  notes:   (lg.notes   && typeof lg.notes   === "object" && !Array.isArray(lg.notes))   ? lg.notes   : {} };
       return o;
     });
     if (!ledgers.length) ledgers = [ makeLedger("主账本","cjy",false) ];
