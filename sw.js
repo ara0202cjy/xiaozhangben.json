@@ -1,4 +1,4 @@
-const CACHE = "dgr-xiaozhangben-v13";
+const CACHE = "dgr-xiaozhangben-v14";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon.svg", "./apple-touch-icon.png"];
 
 self.addEventListener("message", e => { if (e.data === "skip") self.skipWaiting(); });
