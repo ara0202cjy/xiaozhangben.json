@@ -187,6 +187,17 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 .fpill .px:active{background:var(--coral);color:#fff}
 .fp-none{font-size:10px;color:var(--ink3);font-weight:600;padding:3px 2px}
 .mg-cap{font-size:var(--fs-xs);font-weight:800;color:var(--ink2);margin:6px 0 3px;padding-left:2px}
+/* 分类/对象管理：横向紧凑胶囊布局 */
+.chipwrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;align-items:stretch}
+.mgchip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line2);border-radius:99px;background:#FFFDF8;
+  padding:3px 4px 3px 11px;font-size:11px;font-weight:800;color:var(--ink2);white-space:nowrap}
+.mgchip-name{line-height:1.2;overflow:hidden;text-overflow:ellipsis;max-width:128px}
+.mgchip.def{background:var(--mint-l);border-color:#BFE3D5;color:var(--mint-d)}
+.mgchip-acts{display:inline-flex;gap:1px;margin-left:2px}
+.mgchip-act{width:22px;height:22px;border-radius:50%;border:none;background:transparent;display:grid;place-items:center;color:var(--ink3);flex:none}
+.mgchip-act .ic{width:13px;height:13px}
+.mgchip-act:active{background:var(--cream2)}
+.mgchip-act[data-act="del"]:active{background:#FBE6E6;color:#C0392B}
 .kw{width:100%;flex:none}
 .lsum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:none}
 .lsum div{background:var(--cream2);border:1px solid var(--line);border-radius:10px;padding:5px 4px;text-align:center}
@@ -591,18 +602,25 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       </div>
     </details>
 
-    <details class="fold">
-      <summary class="fh"><svg class="ic"><use href="#i-tag"/></svg><b>分类与对象</b>
-        <span class="t">可增删改</span><span class="arr"></span></summary>
+    <details class="fold" open>
+      <summary class="fh"><svg class="ic"><use href="#i-tag"/></svg><b>分类管理</b>
+        <span class="t">支出/收入分类可增删改</span><span class="arr"></span></summary>
       <div class="fbody">
         <div class="mg-cap">支出分类</div>
-        <div id="catExpList" class="mgmt-list"></div>
+        <div id="catExpList" class="chipwrap"></div>
         <button class="weakbtn" id="btnAddCatExp" style="margin:6px 0 10px">＋ 新增支出分类</button>
         <div class="mg-cap">收入分类</div>
-        <div id="catIncList" class="mgmt-list"></div>
+        <div id="catIncList" class="chipwrap"></div>
         <button class="weakbtn" id="btnAddCatInc" style="margin:6px 0 10px">＋ 新增收入分类</button>
+      </div>
+    </details>
+
+    <details class="fold" open>
+      <summary class="fh"><svg class="ic"><use href="#i-tag"/></svg><b>对象管理</b>
+        <span class="t">支出对象可增删改</span><span class="arr"></span></summary>
+      <div class="fbody">
         <div class="mg-cap">支出对象</div>
-        <div id="targetList" class="mgmt-list"></div>
+        <div id="targetList" class="chipwrap"></div>
         <button class="weakbtn" id="btnAddTarget">＋ 新增支出对象</button>
       </div>
     </details>
@@ -2035,21 +2053,18 @@ function renderCatMgmt(){
   const inc = (a.cats && a.cats.income) || (CATS.income[a.profile] || CATS.income.cjy);
   const tg  = (a.targets && a.targets.list) || targetsOf(a.profile).list;
   const td  = targetDef(a);
-  $("#catExpList").innerHTML = exp.map(c =>
-    `<div class="mi"><span class="mi-name">${esc(c.name)}</span><span class="mi-acts">
-      <button class="mi-act" data-act="ren" data-ct="expense" data-id="${esc(c.id)}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>
-      <button class="mi-act" data-act="del" data-ct="expense" data-id="${esc(c.id)}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
-    </span></div>`).join("");
-  $("#catIncList").innerHTML = inc.map(c =>
-    `<div class="mi"><span class="mi-name">${esc(c.name)}</span><span class="mi-acts">
-      <button class="mi-act" data-act="ren" data-ct="income" data-id="${esc(c.id)}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>
-      <button class="mi-act" data-act="del" data-ct="income" data-id="${esc(c.id)}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
-    </span></div>`).join("");
+  const catActs = (id) =>
+    `<button class="mgchip-act" data-act="ren" data-id="${esc(id)}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>`+
+    `<button class="mgchip-act" data-act="del" data-id="${esc(id)}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>`;
+  const chip = (name, cls, acts) =>
+    `<span class="mgchip ${cls||""}"><span class="mgchip-name">${esc(name)}</span><span class="mgchip-acts">${acts}</span></span>`;
+  $("#catExpList").innerHTML = exp.map(c => chip(c.name, "", catActs(c.id))).join("");
+  $("#catIncList").innerHTML = inc.map(c => chip(c.name, "", catActs(c.id))).join("");
   $("#targetList").innerHTML = tg.map((t,i) =>
-    `<div class="mi"><span class="mi-name">${esc(t)}${t===td?" · 默认":""}</span><span class="mi-acts">
-      <button class="mi-act" data-act="ren" data-ti="${i}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>
-      <button class="mi-act" data-act="del" data-ti="${i}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
-    </span></div>`).join("");
+    chip(t, t===td ? "def" : "",
+      `<button class="mgchip-act" data-act="ren" data-ti="${i}" title="重命名"><svg class="ic"><use href="#i-edit"/></svg></button>`+
+      `<button class="mgchip-act" data-act="del" data-ti="${i}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>`)
+  ).join("");
 }
 function addCat(type){
   ensureCats();
