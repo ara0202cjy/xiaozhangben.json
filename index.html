@@ -219,9 +219,10 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 .rngcap{font-size:var(--fs-xs);font-weight:800;color:var(--ink2);padding-left:2px}
 
 /* 汇总条 */
-.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:none}
+.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex:none}
 .sum div{background:var(--mint-ll);border:1px solid #D8EEE5;border-radius:11px;padding:6px 8px}
 .sum .k{font-size:var(--fs-xs);color:var(--ink2);font-weight:700}
+.sum .k .sub{font-size:9px;font-weight:600;color:var(--ink3);margin-left:2px}
 .sum .v{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.4px;margin-top:1px}
 .sum div.out{background:var(--coral-l);border-color:#F3D2CE}
 .sum div.out .v{color:var(--coral-d)}
@@ -241,6 +242,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 
 /* 对比 */
 .cmp{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:11px;padding-right:2px}
+.cmp-avg{font-size:var(--fs-s);font-weight:800;color:var(--coral-d);padding:1px 0 6px;font-variant-numeric:tabular-nums}
 .cmp-row{display:flex;gap:8px;align-items:center}
 .cmp-lab{width:58px;flex:none;font-size:var(--fs-s);font-weight:800;color:var(--ink2);line-height:1.2}
 .cmp-bars{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
@@ -496,6 +498,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
       <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column">
         <div class="h"><svg class="ic"><use href="#i-chart"/></svg><b>收支对比</b>
           <span class="t" id="cmpUnit">—</span></div>
+        <div class="cmp-avg" id="cmpAvg">日均支出 ¥0</div>
         <div class="cmp" id="cmpBars"></div>
       </div>
     </section>
@@ -516,6 +519,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
         <div><div class="k">收入</div><div class="v num pos" id="sIn">¥0</div></div>
         <div class="out"><div class="k">支出</div><div class="v num" id="sOut">¥0</div></div>
         <div><div class="k">结余</div><div class="v num" id="sBal">¥0</div></div>
+        <div><div class="k">日均支出<span class="sub" id="sAvgD"></span></div><div class="v num" id="sAvg">¥0</div></div>
       </div>
 
       <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column">
@@ -950,6 +954,24 @@ function stat(){
   });
   return { income, expense, balance: income - expense, n, byCat };
 }
+/* 所选区间的天数（用于「日平均支出」）：具体日=1；具体月=当月天数；具体年=365/366；
+   全部时间=最早记录~最晚记录跨度（含首尾），无记录则回退 1 */
+function rangeDays(){
+  const recs = curAcc().records;
+  if (range.d !== "all") return 1;
+  if (range.m !== "all"){
+    const y = +range.y, m = +range.m;
+    return new Date(y, m, 0).getDate();
+  }
+  if (range.y !== "all"){
+    const y = +range.y;
+    return ((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) ? 366 : 365;
+  }
+  const ds = recs.map(r => r.date).filter(Boolean).sort();
+  if (!ds.length) return 1;
+  const diff = Math.round((new Date(ds[ds.length-1]) - new Date(ds[0])) / 86400000) + 1;
+  return Math.max(1, diff);
+}
 function rangeLabel(){
   if (range.y === "all") return "全部时间";
   if (range.m === "all") return range.y + " 年";
@@ -1171,6 +1193,10 @@ function renderCmp(){
   const showIncome = (g === "year");
   const unitTxt = g==="year" ? "按年对比" : g==="month" ? "按月对比" : "按日对比";
   $("#cmpUnit").textContent = unitTxt + (showIncome ? " · 收/支" : " · 仅支出");
+  const s = stat();
+  const days = rangeDays();
+  const avgExp = days > 0 ? s.expense / days : 0;
+  $("#cmpAvg").textContent = "日均支出 " + inkMask(money0(avgExp), false) + `（${days}天）`;
   if (!data.length){ $("#cmpBars").innerHTML = empty("这个区间还没有记录"); return; }
   const maxV = Math.max(1, ...data.flatMap(b => showIncome ? [b.income, b.expense] : [b.expense]));
   $("#cmpBars").innerHTML = data.map(b => `
@@ -1201,6 +1227,10 @@ function renderTotal(){
   $("#sOut").textContent  = inkMask(money0(s.expense), false);
   $("#sBal").innerHTML    = inkMask(money0(s.balance));
   $("#sBal").className = "v num " + (s.balance >= 0 ? "pos" : "neg");
+  const days = rangeDays();
+  const avgExp = days > 0 ? s.expense / days : 0;
+  $("#sAvg").innerHTML = inkMask(money0(avgExp), false);
+  $("#sAvgD").textContent = " · " + days + "天";
   $("#catTag").textContent = s.n ? `${s.n} 笔` : "—";
 
   const entries = Object.entries(s.byCat).sort((a,b) => b[1]-a[1]);
@@ -2018,7 +2048,6 @@ function ensureTargets(){
   const a = curAcc();
   if (!a.targets) a.targets = { list: targetsOf(a.profile).list.slice(), def: targetsOf(a.profile).def };
 }
-let noteEditCat = null;
 function renderCatMgmt(){
   const a = curAcc();
   const exp = (a.cats && a.cats.expense) || CATS.expense;
@@ -2093,42 +2122,10 @@ function delTarget(i){
 }
 function afterCatChange(){
   renderCatMgmt(); renderCats(); renderEditForm(); renderFiltPills();
-  renderNoteMgr(); renderQuickNotes(); renderTotal(); renderList(); renderCmp(); renderAccountBox();
+  renderQuickNotes(); renderTotal(); renderList(); renderCmp(); renderAccountBox();
 }
 function afterTargetChange(){
   renderCatMgmt(); renderTargets(); renderEditForm(); renderTotal(); renderList(); renderCmp();
-}
-/* 高频词管理（按分类）：每个分类有各自独立的高频词 */
-function renderNoteMgr(){
-  if (!$("#noteCatTabs")) return;   // 设置里已移除高频词管理，跳过
-  const a = curAcc();
-  const exp = (a.cats && a.cats.expense) || CATS.expense;
-  const inc = (a.cats && a.cats.income) || (CATS.income[a.profile] || CATS.income.cjy);
-  const all = exp.map(c => ({ id:c.id, name:c.name }))
-            .concat(inc.map(c => ({ id:c.id, name:c.name })));
-  if (!noteEditCat || !all.some(c => c.id === noteEditCat)) noteEditCat = all[0] && all[0].id;
-  $("#noteCatTabs").innerHTML = all.map(c =>
-    `<span class="fpill ${c.id===noteEditCat?"on":""}" data-nc="${esc(c.id)}">${esc(c.name)}</span>`).join("");
-  const arr = getNotes(a, noteEditCat);
-  $("#noteEditList").innerHTML = (arr.length
-    ? arr.map(n =>
-        `<div class="mi"><span class="mi-name">${esc(n)}</span><span class="mi-acts">
-          <button class="mi-act" data-act="delnote" data-v="${esc(n)}" title="删除"><svg class="ic"><use href="#i-trash"/></svg></button>
-        </span></div>`).join("")
-    : `<div class="fp-none">该分类暂无高频词，点下方「＋ 新增高频词」添加</div>`);
-}
-function addNote2(){
-  const v = (prompt("新高频词：", "") || "").trim().slice(0, 24);
-  if (!v) return;
-  const a = curAcc(); if (!a.notes) a.notes = {};
-  if (!a.notes[noteEditCat]) a.notes[noteEditCat] = [];
-  if (a.notes[noteEditCat].indexOf(v) >= 0){ toast("该分类已有此高频词","err"); return; }
-  a.notes[noteEditCat].push(v); save(); renderNoteMgr(); renderQuickNotes(); toast("已添加");
-}
-function delNote2(v){
-  const a = curAcc(); if (a.notes && a.notes[noteEditCat])
-    a.notes[noteEditCat] = a.notes[noteEditCat].filter(x => x !== v);
-  save(); renderNoteMgr(); renderQuickNotes();
 }
 
 $("#btnAddCatExp").onclick = () => addCat("expense");
@@ -2189,7 +2186,7 @@ function closeSettings(){
   $("#setMask").classList.remove("on");
 }
 
-/* 隐私模式（防偷窥）：顶部眼睛图标 / 设置内开关均可切换，金额自动隐藏 */
+/* 隐私模式（防偷窥）：顶部眼睛图标切换，金额自动隐藏 */
 function togglePrivacy(){
   S.privacy = !S.privacy;
   save();
@@ -2205,8 +2202,6 @@ function applyPrivacy(){
     if (use) use.setAttribute("href", on ? "#i-eye-off" : "#i-eye");
     btn.setAttribute("aria-label", on ? "关闭隐私模式" : "开启隐私模式（防偷窥）");
   }
-  const tag = $("#privacyTag"); if (tag) tag.textContent = on ? "开" : "关";
-  const st  = $("#privacyState"); if (st) st.textContent = on ? "开" : "关";
   renderTotal(); renderList(); renderCmp();   // 立即刷新所有金额显示
 }
 $("#btnPrivacy").onclick  = togglePrivacy;
