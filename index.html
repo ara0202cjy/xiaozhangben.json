@@ -167,6 +167,10 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
 .qn.add .ic{width:11px;height:11px}
 .qn-in{flex:1;min-width:90px;height:26px;border:1px solid var(--mint);border-radius:99px;padding:0 10px;
   font-size:11px;font-weight:700;background:#fff}
+.qn-head{display:flex;align-items:center;justify-content:space-between}
+.editbtn{margin:0;border:1px solid var(--mint);background:#FFFDF8;color:var(--mint-d);border-radius:99px;
+  font-size:10px;font-weight:800;padding:2px 12px;line-height:1.4;flex:none}
+.editbtn.on{background:var(--mint);color:#fff;border-color:var(--mint)}
 /* 详单筛选 */
 .filts{display:flex;flex-direction:column;gap:5px;flex:none}
 .filtrow{display:flex;gap:6px;align-items:center}
@@ -477,7 +481,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit;outline:none}
         <input class="inp" id="note" placeholder="备注（选填）" maxlength="24">
       </div>
 
-      <div class="objlabel" style="margin-top:4px">高频词 · 点 × 删除，点 ＋ 添加</div>
+      <div class="objlabel qn-head" style="margin-top:4px"><span>高频词</span><button class="editbtn" id="qnEditBtn" type="button">编辑</button></div>
       <div class="quicknotes" id="quickNotes"></div>
 
       <button class="bigbtn" id="saveBtn"><svg class="ic"><use href="#i-check"/></svg>保存这笔</button>
@@ -1056,6 +1060,7 @@ function go(t){
    页 1 · 记账
    ========================================================= */
 let aType = "expense", aCat = "food", aTarget = "个人";
+let qnEditing = false;   // 高频词编辑开关：仅编辑态可增删，防误删
 
 function renderCats(){
   const list = getCats(curAcc(), aType);
@@ -1119,9 +1124,12 @@ function addAccount(){
 function renderQuickNotes(){
   const box = $("#quickNotes");
   const arr = getNotes(curAcc(), aCat);
-  box.innerHTML = arr.map(n =>
-    `<span class="qn" data-n="${esc(n)}">${esc(n)}<span class="x" data-x="1" aria-label="删除">×</span></span>`).join("")
-    + `<span class="qn add" data-add="1"><svg class="ic"><use href="#i-plus"/></svg>添加</span>`;
+  const chips = arr.map(n =>
+    `<span class="qn" data-n="${esc(n)}">${esc(n)}` +
+    (qnEditing ? `<span class="x" data-x="1" aria-label="删除">×</span>` : ``) +
+    `</span>`).join("");
+  const add = qnEditing ? `<span class="qn add" data-add="1"><svg class="ic"><use href="#i-plus"/></svg>添加</span>` : "";
+  box.innerHTML = chips + add;
 }
 function addNote(v, cat){
   cat = cat || aCat;
@@ -1264,21 +1272,26 @@ function renderFiltPills(){
         ).join("")
       : `<span class="fp-none">暂无高频词</span>`);
 }
-/* 高频词：聚合当前账本所有分类的词；仅显示记录中真实出现过的，最多 8 个 */
+/* 高频词：与所选分类挂钩——未选分类(全部)显示全部，选中分类则仅显示该分类的高频词 */
 const NOTE_PILL_MAX = 8;
 function noteFreq(){
   const cnt = {};
   curAcc().records.forEach(r => { const n = (r.note||"").trim(); if (n) cnt[n] = (cnt[n]||0) + 1; });
   return cnt;
 }
-function allNotes(){
+function catNoteSet(catIds){
   const a = curAcc(), set = [];
-  if (a.notes) Object.keys(a.notes).forEach(k => a.notes[k].forEach(n => { if (set.indexOf(n) < 0) set.push(n); }));
+  catIds.forEach(k => { if (a.notes && a.notes[k]) a.notes[k].forEach(n => { if (set.indexOf(n) < 0) set.push(n); }); });
   return set;
 }
 function topFilterNotes(){
+  const a = curAcc();
+  const catIds = listCats.size === 0
+    ? getCats(a, "expense").map(c => c.id).concat(getCats(a, "income").map(c => c.id))
+    : Array.from(listCats);
+  const set = catNoteSet(catIds);
   const cnt = noteFreq();
-  return allNotes().filter(n => cnt[n] > 0).sort((a,b) => cnt[b] - cnt[a]).slice(0, NOTE_PILL_MAX);
+  return set.sort((x, y) => (cnt[y] || 0) - (cnt[x] || 0)).slice(0, NOTE_PILL_MAX);
 }
 function renderList(){
   let rs = curAcc().records.filter(inRange).sort((a,b) =>
@@ -1498,11 +1511,21 @@ $$(".ledgerchips").forEach(el => el.onclick = e => {
   renderTotal(); renderList(); renderCmp();
   toast("已切到「" + curLedgerName() + "」");
 });
+$("#qnEditBtn").onclick = () => {
+  qnEditing = !qnEditing;
+  const btn = $("#qnEditBtn");
+  btn.textContent = qnEditing ? "完成" : "编辑";
+  btn.classList.toggle("on", qnEditing);
+  renderQuickNotes();
+};
 $("#quickNotes").onclick = e => {
   const addBtn = e.target.closest("[data-add]");
-  if (addBtn){ startAddNote(); return; }
+  if (addBtn){ if (qnEditing) startAddNote(); return; }
   const x = e.target.closest("[data-x]");
-  if (x){ const chip = x.closest("[data-n]"); if (chip) removeNote(chip.dataset.n); return; }
+  if (x){
+    if (qnEditing){ const chip = x.closest("[data-n]"); if (chip) removeNote(chip.dataset.n); }
+    return;
+  }
   const chip = e.target.closest("[data-n]");
   if (chip){ $("#note").value = chip.dataset.n; $("#note").focus(); }
 };
