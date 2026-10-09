@@ -958,23 +958,44 @@ function stat(){
   });
   return { income, expense, balance: income - expense, n, byCat };
 }
-/* 所选区间的天数（用于「日平均支出」）：具体日=1；具体月=当月天数；具体年=365/366；
-   全部时间=最早记录~最晚记录跨度（含首尾），无记录则回退 1 */
+/* 所选区间的分母天数（用于「日平均支出」）：只算今天及以前，未来日期不计入。
+   具体日=1（未来单日回退1避免除0）；
+   具体月=当月天数，但若为当月则只算到今天（如10月9日→9天），未来月回退1；
+   具体年=全年天数，若当年则只算到今天（年内第几天），未来年回退1；
+   全部时间=最早~最晚记录跨度，末端若超过今天则截断到今天。 */
 function rangeDays(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const TK = iso(today);                       // 今天 'YYYY-MM-DD'
   const recs = curAcc().records;
-  if (range.d !== "all") return 1;
-  if (range.m !== "all"){
-    const y = +range.y, m = +range.m;
-    return new Date(y, m, 0).getDate();
+  const leap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  // 全部时间：按记录跨度，末端截断到今天（排除未来记录）
+  if (range.y === "all"){
+    const ds = recs.map(r => r.date).filter(Boolean).sort();
+    if (!ds.length) return 1;
+    let end = ds[ds.length-1]; if (end > TK) end = TK;
+    if (ds[0] > TK) return 1;                   // 整段在未来
+    const a = ds[0].split("-").map(Number), b = end.split("-").map(Number);
+    const diff = Math.round((new Date(b[0],b[1]-1,b[2]) - new Date(a[0],a[1]-1,a[2])) / 86400000) + 1;
+    return Math.max(1, diff);
   }
-  if (range.y !== "all"){
-    const y = +range.y;
-    return ((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) ? 366 : 365;
+  const y = +range.y;
+  // 具体年
+  if (range.m === "all"){
+    if (y > today.getFullYear()) return 1;                       // 未来年
+    if (y === today.getFullYear()){                              // 当年→年内到今天
+      return Math.round((today - new Date(y,0,1)) / 86400000) + 1;
+    }
+    return leap(y) ? 366 : 365;                                  // 过去年→全年
   }
-  const ds = recs.map(r => r.date).filter(Boolean).sort();
-  if (!ds.length) return 1;
-  const diff = Math.round((new Date(ds[ds.length-1]) - new Date(ds[0])) / 86400000) + 1;
-  return Math.max(1, diff);
+  // 具体月
+  if (range.d === "all"){
+    const mDays = new Date(y, +range.m, 0).getDate();
+    if (y > today.getFullYear() || (y === today.getFullYear() && +range.m > today.getMonth()+1)) return 1; // 未来月
+    if (y === today.getFullYear() && +range.m === today.getMonth()+1) return today.getDate();             // 当月→到今天
+    return mDays;                                                                                       // 过去月→全月
+  }
+  // 具体日
+  return 1;
 }
 function rangeLabel(){
   if (range.y === "all") return "全部时间";
